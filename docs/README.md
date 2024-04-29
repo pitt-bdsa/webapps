@@ -1,1 +1,0 @@
-This folder is called "docs" because that is the only subdirectory that GitHub Pages can use instead of the base directory.

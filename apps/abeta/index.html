@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+
+<head>
+    <title>A-Beta Bounding Boxes</title>
+    <script type="text/javascript" src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.13.2/jquery-ui.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.13.2/themes/base/jquery-ui.min.css" integrity="sha512-ELV+xyi8IhEApPS/pSj66+Jiw+sOT1Mqkzlh8ExXihe4zfqbWkxPRi8wptXIO9g73FSlhmquFlUOuMSoXz5IRw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/openseadragon/4.1.1/openseadragon.min.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/paper.js/0.12.17/paper-full.js"></script>
+    <!-- <script type="text/javascript" src="../../paperseadragon.js"></script> -->
+    <script type="module" src="./app.mjs"></script>
+    <link rel="stylesheet" href="../../dsa/dsa.css">
+    <link rel="stylesheet" href="./app.css">
+    
+</head>
+<body>
+    <div class="content">
+        <div id="header">
+            <div class="dsa-ui-container"></div>
+            <div>
+                <button id="add-roi" class="annotation-action">Add ROI</button>
+                <select id="roi-dropdown" class="annotation-action">
+                    <option value="">See all ROIs</option>
+                </select>
+                <button id="edit-roi" class="annotation-action roi-action">Edit</button>
+                <button id="delete-roi" class="annotation-action roi-action">Delete</button>
+                |
+                <span id="bb-actions">
+                    <button id="cored" class="annotation-action roi-action bb-type" data-type="cored">Cored</button>
+                    <button id="diffuse" class="annotation-action roi-action bb-type" data-type="diffuse">Diffuse</button>
+                    <button id="CAA" class="annotation-action roi-action bb-type" data-type="CAA">CAA</button>
+                    <button id="dyshoric" class="annotation-action roi-action bb-type" data-type="dyshoric">Dyshoric</button>
+                </span>
+                |
+                <span id="edit-actions">
+                    <button id="edit-bbox">Edit</button>
+                    <button id="done-editing-bbox">Done</button>
+                </span>
+            </div>
+        </div>
+        <div id="viewer-container">
+            <div id='viewer' class="viewer"></div>
+        </div>
+    </div>
+</body>
