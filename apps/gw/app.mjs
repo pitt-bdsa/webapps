@@ -185,6 +185,8 @@ function setupMultiPolygon(name, color, parent){
     mp.paperItem.on('item-replaced', ev => {
         console.log('item-replaced', ev);
         annotations[name] = ev.item;
+        ev.item.displayName = mp.name;
+        ev.item.data.type = name;
     })
 }
 

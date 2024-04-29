@@ -157,13 +157,14 @@ bboxTool.onMouseUp = function(event){
     this.refreshItems();
 }
 bboxTool.activate = function(target){
+    this.targetGroup = activeROI;
+
     this.targetGroup.addChild(this.placeholder.paperItem);
     if(activeROI.children.ROI){
         activeROI.children.ROI.selected = false;
     }  
     this.refreshItems();
     if(this.items.length === 0 || this.item === this.placeholder.paperItem){
-        this.targetGroup = activeROI;
         this.placeholder.paperItem.style = target.style;
         this.placeholder.paperItem.selectedColor = this.placeholder.paperItem.strokeColor;
         this.placeholder.paperItem.style.fillColor = 'white';
@@ -227,6 +228,7 @@ doneEditingBBoxButton.addEventListener('click', function(){
     editBBoxButton.classList.remove('active');
     // deselect all selected items
     activeROI.selected = false;
+    tk.activateTool('default');
 });
 
 
@@ -236,7 +238,7 @@ function setActiveROI(key){
     if(activeROI){
         Object.values(ROIMap).forEach(group => {
             if(group && group !== activeROI){
-                group.opacity = 0.5;
+                group.opacity = 0.25;
             }
         });
         activeROI.opacity = 1;
