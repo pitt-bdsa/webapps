@@ -25,6 +25,9 @@ window.addEventListener('beforeunload',function(){
     return 'Are you sure you want to leave?';
 });
 
+// periodically check areas to enable finish buttons
+window.setInterval(testAreas, 500);
+
 // create the viewer
 let viewer = window.viewer = OpenSeadragon({
     element:'viewer',
@@ -132,6 +135,17 @@ finishLeptomeninges.addEventListener('click',function(){
     this.classList.add('complete');
     testComplete();
 });
+
+// Set up the "Submit" button
+submitButton.addEventListener('click', function(){
+    console.log(tk.toGeoJSON())
+})
+
+function testAreas(){
+    annotations['Gray Matter'] && (finishGray.disabled = annotations['Gray Matter'].area === 0);
+    annotations['White Matter'] && (finishWhite.disabled = annotations['White Matter'].area === 0);
+    annotations['Leptomeninges'] && (finishLeptomeninges.disabled = annotations['Leptomeninges'].area === 0);
+}
 
 function testComplete(){
     if(document.querySelectorAll('#annotation-controls button.complete').length === 3){
