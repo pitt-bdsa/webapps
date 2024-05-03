@@ -1,8 +1,11 @@
 
-import { RotationControlOverlay } from 'https://cdn.jsdelivr.net/gh/pearcetm/osd-paperjs-annotation@0.3.1/src/js/rotationcontrol.mjs';
-import { AnnotationToolkit } from 'https://cdn.jsdelivr.net/gh/pearcetm/osd-paperjs-annotation@0.3.1/src/js/annotationtoolkit.mjs';
-// import { MultiPolygon } from 'https://cdn.jsdelivr.net/gh/pearcetm/osd-paperjs-annotation@0.3.1/src/js/paperitems/multipolygon.mjs';
-import { DSAUserInterface } from '../../dsa/dsauserinterface.mjs';
+import { RotationControlOverlay } from 'https://cdn.jsdelivr.net/gh/pearcetm/osd-paperjs-annotation@0.4.0/src/js/rotationcontrol.mjs';
+import { AnnotationToolkit } from 'https://cdn.jsdelivr.net/gh/pearcetm/osd-paperjs-annotation@0.4.0/src/js/annotationtoolkit.mjs';
+import { DSAUserInterface } from '../dsa/dsauserinterface.mjs';
+
+// Global DSA linking variables
+const ANNOTATION_NAME = 'Gray White Segmentation';
+const ANNOTATION_DESCRIPTION = 'Created by the Gray-White Segmentation Web App';
 
 // Global variables
 const startGray = document.querySelector('#start-gray');
@@ -41,10 +44,10 @@ let viewer = window.viewer = OpenSeadragon({
 });
 
 // DSA setup
-let dsaUI = new DSAUserInterface(viewer);
+const dsaUI = new DSAUserInterface(viewer);
 dsaUI.header.appendTo('.dsa-ui-container');
 
-// add rotation control
+// Add rotation control
 const rotationControl = new RotationControlOverlay(viewer);
 rotationControl.origActivate = rotationControl.activate;
 rotationControl.disable = () => rotationControl.activate = ()=>{};
@@ -61,9 +64,22 @@ tk.activateTool = function(name){
     return tool;
 } 
 
+// move the visibility controls up next to the toolbar
+$('.annotation-visibility-controls').insertAfter('.annotation-ui-drawing-toolbar').css('display','inline-flex');
+
 viewer.addHandler('open', ()=>{
     document.querySelectorAll('#annotation-controls button').forEach(b => b.classList.remove('active'));
-    setupFeatureCollection();
+    dsaUI.getAnnotations(viewer.world.getItemAt(0).source.item._id).then(d=>{
+        const existingGWSegmentations = d.filter(a => a.annotation?.name === ANNOTATION_NAME);
+        if(existingGWSegmentations.length === 0){
+            // set up new segmentation
+            setupFeatureCollection();
+        } else if (existingGWSegmentations.length === 1){
+            dsaUI.loadAnnotationAsGeoJSON(existingGWSegmentations[0]._id).then(d=>{
+                setupFeatureCollection(d);
+            })
+        }
+    });
 })
 
 // when viewer closes, reset the state of the app
@@ -138,7 +154,19 @@ finishLeptomeninges.addEventListener('click',function(){
 
 // Set up the "Submit" button
 submitButton.addEventListener('click', function(){
-    console.log(tk.toGeoJSON())
+    submitButton.classList.add('pending');
+    submitButton.disabled = true;
+    const itemID = viewer.world.getItemAt(0).source.item._id;
+    const geoJSON = tk.toGeoJSON();
+    dsaUI.saveAnnotationInDSAFormat(itemID, geoJSON, true).then(d=>{
+        submitButton.classList.add('complete');
+        submitButton.classList.remove('pending');
+    }).catch(e=>{
+        console.error(e);
+        window.alert('Error! There was a problem saving the segmentation. Do you need to log in to the DSA?');
+        submitButton.classList.remove('pending');
+    });
+
 })
 
 function testAreas(){
@@ -148,16 +176,48 @@ function testAreas(){
 }
 
 function testComplete(){
-    if(document.querySelectorAll('#annotation-controls button.complete').length === 3){
-        submitButton.disabled = false;
+    if(document.querySelectorAll('#annotation-controls .finish-button.complete').length === 3){
+        submitButton.disabled = false || submitButton.classList.contains('pending');
     }
 }
 
-function setupFeatureCollection(){
-    featureCollection = tk.addEmptyFeatureCollectionGroup();
-    setupMultiPolygon('Gray Matter', 'green', featureCollection);
-    setupMultiPolygon('White Matter', 'blue', featureCollection);
-    setupMultiPolygon('Leptomeninges', 'red', featureCollection);
+function setupFeatureCollection(existing){
+    if(existing){
+        tk.addFeatureCollections(existing, true);
+        // find the elements corresponding to our annotations, and grab references to them
+        // while deleting any that are not allowed
+        const paperLayer = viewer.world.getItemAt(0)?.paperLayer;
+        console.log('paperLayer', paperLayer);
+        const validNamedChildren = paperLayer.children.filter(c => c.displayName === ANNOTATION_NAME);
+        // get rid of all except the first one
+        validNamedChildren.slice(1).forEach(c => c.remove());
+        paperLayer.children.forEach(c => {
+            if( !validNamedChildren.includes(c)){ 
+                c.remove();
+            }
+        });
+        featureCollection = validNamedChildren[0];
+        const validNames = Object.keys(annotations);
+        featureCollection.children.forEach(child => {
+            if(validNames.includes(child.displayName)){
+                annotations[child.displayName] = child;
+            } else {
+                child.remove();
+            }
+        })
+    } else {
+        featureCollection = tk.addEmptyFeatureCollectionGroup();
+        featureCollection.displayName = ANNOTATION_NAME;
+        featureCollection.data.userdata = { dsa: { description: ANNOTATION_DESCRIPTION} };
+        setupMultiPolygon('Gray Matter', 'green', featureCollection);
+        setupMultiPolygon('White Matter', 'blue', featureCollection);
+        setupMultiPolygon('Leptomeninges', 'red', featureCollection);
+    }
+    
+    // reset the button states
+    document.querySelectorAll('.annotation-controls button.complete').forEach(b=>b.classList.remove('complete'));
+    document.querySelectorAll('.annotation-controls button.active').forEach(b=>b.classList.remove('active'));
+
 }
 
 function setupMultiPolygon(name, color, parent){
@@ -171,22 +231,22 @@ function setupMultiPolygon(name, color, parent){
         },
         strokeColor: color,
         fillColor: color,
-        fillOpacity: 0.2
+        fillOpacity: 0.1
     };
 
     const mp = tk.makePlaceholderItem(style);
 
     mp.paperItem.selectedColor = color;
     mp.paperItem.displayName = name;
-    mp.paperItem.data.type = name;
+    mp.paperItem.data.userdata = {type: name};
     parent.addChild(mp.paperItem);
 
     annotations[name] = mp.paperItem;
     mp.paperItem.on('item-replaced', ev => {
         console.log('item-replaced', ev);
         annotations[name] = ev.item;
-        ev.item.displayName = mp.name;
-        ev.item.data.type = name;
+        ev.item.displayName = name;
+        ev.item.data.userdata = {type: name};
     })
 }
 

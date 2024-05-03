@@ -26,22 +26,19 @@ export class DSAAdapter{
     }
 
     // Convert array of GeoJSON FeatureCollections into DSA annotation elements
-    featureCollectionsToElements(fcArray){
+    featureCollectionArrayToElements(fcArray){
         
-        let elements = fcArray.map(geojson=>{
-            // let obj = {};
-            // let userdata = (geojson.properties && geojson.properties.userdata) || {};
-            // let dsainfo = userdata.dsa || {};
-            // obj.name = geojson.label;
-            // obj.description = "description" in dsainfo ? dsainfo.description : 'Created by AnnotationToolkit DSA Adapter v1';
-            // obj.attributes = {}
-            
-            return geojson.features.map(featureToElement).flat().map(element=>{
-                element.group = ''+geojson.label;
-                return element;
-            });
-            
-        }).flat();
+        let elements = fcArray.map(this.featureCollectionToElements).flat();
+        
+        return elements;
+    }
+    // Convert array of GeoJSON FeatureCollections into DSA annotation elements
+    featureCollectionToElements(fc){
+        
+        let elements = fc.features.map(featureToElement).flat().map(element=>{
+            element.group = ''+fc.label;
+            return element;
+        });
         
         return elements;
     }
@@ -250,6 +247,10 @@ function featureToElement(feature){
         }
     }
 
+    if(p.userdata){
+        e.user = Object.assign({}, p.userdata, e.user);
+    }
+
     return e;
 }
 
@@ -309,7 +310,7 @@ function elementArrayToFeatureCollection(annotationId, label, elements, descript
                 dsa:{
                     annotationId: annotationId,
                     group: groupName,
-                    annotationDescription: description
+                    description: description
                 }
             },
         }

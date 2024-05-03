@@ -181,6 +181,75 @@ export class DSAUserInterface extends OpenSeadragon.EventSource{
         
     }
 
+    getAnnotations(itemID){
+        return this.API.get('annotation',{params:{itemId:itemID}, noCache: true});
+    }
+
+    loadAnnotationAsGeoJSON(annotationId){
+        return this.API.get(`annotation/${annotationId}`, {noCache: true}).then(d=>this.adapter.annotationToFeatureCollections(d));
+    }
+
+    saveAnnotationInDSAFormat(itemID, geoJSON, saveGeoJSONFile){
+        if(Array.isArray(geoJSON)){
+            const promises = geoJSON.map(item => this.saveAnnotationInDSAFormat(itemID, item, saveGeoJSONFile));
+            return Promise.all(promises);
+        }
+        const annotationID = geoJSON.properties.userdata?.dsa?.annotationId;
+        
+        const data = {
+            name: geoJSON.label,
+            description: geoJSON.properties.userdata?.dsa?.description || 'Created by DSAUserInterface.mjs adapter',
+            elements: this.adapter.featureCollectionToElements(geoJSON)
+        }
+
+        let promise;
+        if(annotationID){
+            //use PUT to update the annotation 
+            promise = this.API.put(`annotation/${annotationID}`,{params:{itemId:itemID},data:data});
+        } else {
+            //use POST to create a new annotation
+            promise = this.API.post('annotation',{params:{itemId:itemID},data:data});
+        }
+
+        if(saveGeoJSONFile){
+            return promise.then(d=>{
+            
+                let idExtension = `.${d._id}.json`;
+                let name = `${d.annotation.name}${idExtension}`;
+                let blob = new Blob([JSON.stringify(geoJSON)], {type:'application/json'});
+                let params = {
+                    parentType:'item',
+                    parentId:itemID,
+                    name:name,
+                };
+                // console.log('save as geojson', params);
+                this.API.get(`item/${itemID}/files`, {noCache: true}).then(d=>{
+                    let filtered = d.filter(f=>f.name.endsWith(idExtension) && f.mimeType == 'application/json');
+                    if(filtered.length > 0){
+                        // file already exists - modify the contents
+                        this.API.updateFile(filtered[0], blob).then(d=>{
+                            console.log('Changes saved', d);
+                        });
+                    } else {
+                        // upload a new file to this item
+                        this.API.uploadFile(blob, params).then(d=>{
+                            console.log('File uploaded', d)
+                        })
+                    }
+                    // item with this name already exists. Replace contents with new file.
+        
+                });
+                // 
+            })
+        } else {
+            return promise;
+        }
+        
+        
+        
+       
+    }
+
     // private
     _setupItemNavigation(currentName, currentElement){
         this.header.find('.item-navigation .item').attr('disabled',true).off('click');
@@ -231,7 +300,7 @@ export class DSAUserInterface extends OpenSeadragon.EventSource{
         let geoJSON = this._viewer.annotationToolkit.toGeoJSON();
         // console.log('Saving',geoJSON);
         let itemId = this._currentItem._id;
-        annotation.annotation.elements = this.adapter.featureCollectionsToElements(geoJSON);
+        annotation.annotation.elements = this.adapter.featureCollectionArrayToElements(geoJSON);
         console.log(annotation);
 
         let promise;
