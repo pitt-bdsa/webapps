@@ -1,7 +1,7 @@
 
-import { RotationControlOverlay } from 'https://cdn.jsdelivr.net/gh/pearcetm/osd-paperjs-annotation@0.4.0/src/js/rotationcontrol.mjs';
-import { AnnotationToolkit } from 'https://cdn.jsdelivr.net/gh/pearcetm/osd-paperjs-annotation@0.4.0/src/js/annotationtoolkit.mjs';
-import { RectangleTool } from 'https://cdn.jsdelivr.net/gh/pearcetm/osd-paperjs-annotation@0.4.0/src/js/papertools/rectangle.mjs';
+import { RotationControlOverlay } from 'https://cdn.jsdelivr.net/gh/pearcetm/osd-paperjs-annotation@0.4.3/src/js/rotationcontrol.mjs';
+import { AnnotationToolkit } from 'https://cdn.jsdelivr.net/gh/pearcetm/osd-paperjs-annotation@0.4.3/src/js/annotationtoolkit.mjs';
+import { RectangleTool } from 'https://cdn.jsdelivr.net/gh/pearcetm/osd-paperjs-annotation@0.4.3/src/js/papertools/rectangle.mjs';
 import { DSAUserInterface } from '../dsa/dsauserinterface.mjs';
 
 // Global state variables
@@ -320,10 +320,7 @@ function alignToRectangle(rect){
     try{
         const path = rect.children[0];
         const angle = path.segments[1].point.subtract(path.segments[0].point).angle;
-        //let angle = ROI.features[0].geometry.properties.angle;
         viewer.viewport.rotateTo(-angle, null, true);
-        // const width = rect.bounds.width;
-        // const height = rect.bounds.height;
         const width = path.segments[0].point.subtract(path.segments[1].point).length;
         const height = path.segments[0].point.subtract(path.segments[3].point).length;
         const x = rect.bounds.center.x - width/2;

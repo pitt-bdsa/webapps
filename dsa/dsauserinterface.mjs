@@ -7,6 +7,7 @@ export class DSAUserInterface extends OpenSeadragon.EventSource{
 
         let defaultOptions = {
             hash: true,
+            openFolder: false,
         }
 
         this.options = Object.assign(defaultOptions, options);
@@ -179,6 +180,23 @@ export class DSAUserInterface extends OpenSeadragon.EventSource{
             });
         });
         
+    }
+
+    openItems(items){
+        console.log('open items', items);
+        const promises = items.map(item => {
+            return this.API.get(`item/${item._id}/tiles`, {noCache: true}).catch(e=>{
+                    // console.log('Item not a tilesource',item)
+                    return this.API.get(`item/${item._id}/files`, {noCache: true});
+                }).then(d=>{
+                    return this._createTileSource(item, d, false);
+                });
+        });
+        return Promise.all(promises).then(tileSources => {
+            this.raiseEvent('open-tile-source',{
+                tileSource: tileSources,
+            });
+        });
     }
 
     getAnnotations(itemID){
@@ -417,6 +435,7 @@ export class DSAUserInterface extends OpenSeadragon.EventSource{
             return $('<div>',{class:'item'}).text(item.name).data('item',item);
         });
         container.append(items);
+        return itemList;
     }   
 
     // private
@@ -461,8 +480,15 @@ export class DSAUserInterface extends OpenSeadragon.EventSource{
                         contents.empty().append($('<span>',{class:'loading'}));
                         let folders = this._getFolders(folder).then(folders=>contents.append(folders));
                         let items = this._getItems(folder, contents);
-                        Promise.all([folders, items]).then(()=>{
+                        Promise.all([folders, items]).then(([folders, items])=>{
                             contents.find('.loading').remove();
+                            if(this.options.openFolder){
+                                $('<span>').appendTo(header).text(' [Open all]').on('click',(ev)=>{
+                                    this.openItems(items);
+                                    ev.stopImmediatePropagation();
+                                    ev.preventDefault();
+                                }).css({cursor:'pointer',color:'blue'})
+                            }
                         })
                     } else {
                         element.removeClass('expanded');
@@ -483,19 +509,23 @@ export class DSAUserInterface extends OpenSeadragon.EventSource{
     }
 
     // private
-    _createTileSource(item, fileInfo){
+    _createTileSource(item, fileInfo, getAnnotations = true){
         let baseURL = this.API.url('',{});
         let token = this.API.gettoken();
         let tileSource= fileInfo.tileWidth ? pyramidalTileSource(baseURL, fileInfo, item._id, token) : dsaImageTileSource(baseURL, item._id, token);
-        let listElement = this.annotationEditorGUI.find('.dsa-annotation-list').empty();
-        this.API.get('annotation',{params:{itemId:item._id}, noCache: true}).then(d=>{
-            let elements = d.map(annotation=>{
-                return $('<div>',{class:'annotation-item'}).text(annotation.annotation.name).data('annotation',annotation);
-            })
-            
-            
-            listElement.append(elements);
-        });
+        if(getAnnotations){
+            let listElement = this.annotationEditorGUI.find('.dsa-annotation-list').empty();
+        
+            this.API.get('annotation',{params:{itemId:item._id}, noCache: true}).then(d=>{
+                let elements = d.map(annotation=>{
+                    return $('<div>',{class:'annotation-item'}).text(annotation.annotation.name).data('annotation',annotation);
+                })
+                
+                
+                listElement.append(elements);
+            });
+        }
+        
 
         tileSource.ajaxWithCredentials = true;
         tileSource.name = item.name;
