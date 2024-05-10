@@ -357,20 +357,21 @@ function editButtonClicked(editButton){
 function cropButtonClicked(cropButton){
     const tiledImage = cropButtonMap.get(cropButton);
     const isCropped = tiledImage._croppingPolygons;
-    const croppingPolygon = tiledImage._croppingItem;
+    const data = tiledImageMap.get(tiledImage);
+    const croppingPolygon = data.croppingItem;
     if(isCropped){
         // we're already cropped - remove the cropping from the tiledImage (but don't get rid of the polygon itself)
         tiledImage.resetCroppingPolygons();
-        tiledImage._croppingItem.isBoundingElement = false; // remove this as a bounding element too
+        croppingPolygon.isBoundingElement = false; // remove this as a bounding element too
         viewer.forceRedraw();
         cropButton.innerText = 'Crop';
     } else if (croppingPolygon && croppingPolygon.selected){
         // we've been drawing the cropping polygon. Time to apply it.
-        if(tiledImage._croppingItem.area > 0){
-            tiledImage.setCroppingPolygons(tiledImage._croppingItem.children.map(path => path.segments.map(s=>s.point)));
-            tiledImage._croppingItem.isBoundingElement = true;
+        if(croppingPolygon.area > 0){
+            tiledImage.setCroppingPolygons(croppingPolygon.children.map(path => path.segments.map(s=>s.point)));
+            croppingPolygon.isBoundingElement = true;
         } 
-        tiledImage._croppingItem.deselect();
+        croppingPolygon.deselect();
         viewer.forceRedraw();
         cropButton.innerText = 'Clear';
     } else if (croppingPolygon){
@@ -382,11 +383,15 @@ function cropButtonClicked(cropButton){
     } else {
         // start cropping
         let placeholder = tk.makePlaceholderItem().paperItem;
-        tiledImage.paperLayer.addChild(placeholder);
+        if(data.featureCollection){
+            data.featureCollection.addChild(placeholder);
+        } else {
+            tiledImage.paperLayer.addChild(placeholder);
+        }
         placeholder.select();
-        tiledImage._croppingItem = placeholder;
+        data.croppingItem = placeholder;
         placeholder.on('item-replaced', ev=>{
-            tiledImage._croppingItem = ev.item;
+            data.croppingItem = ev.item;
         });
         cropButton.innerText = 'Apply';
     }
@@ -394,11 +399,7 @@ function cropButtonClicked(cropButton){
 }
 
 startAnnotationButton.addEventListener('click', ()=>{
-    if(startAnnotationButton._paperItem){
-        startAnnotationButton._paperItem.select();
-        saveAnnotationButton.disabled = false;
-        return;
-    }
+    
     let svs;
     for(let i = 0; i < viewer.world.getItemCount(); i++){
         let tiledImage = viewer.world.getItemAt(i);
@@ -411,11 +412,22 @@ startAnnotationButton.addEventListener('click', ()=>{
         alert('No file with a name ending in svs was found');
         return;
     }
+    const data = tiledImageMap.get(svs);
+    // if we've already started an annotation, just select it and return now
+    if(data.annotation){
+        data.annotation.select();
+        saveAnnotationButton.disabled = false;
+        return;
+    }
 
     const featureCollection = tk.addEmptyFeatureCollectionGroup();
+    data.featureCollection = featureCollection;
     featureCollection.displayName = ANNOTATION_NAME;
     featureCollection.data.userdata = { dsa: { description: ANNOTATION_DESCRIPTION} };
     svs.paperLayer.addChild(featureCollection);
+    if(data.croppingItem){
+        featureCollection.addChild(data.croppingItem);
+    }
 
     const placeholder = tk.makePlaceholderItem().paperItem;
     placeholder.rescale = {strokeWidth: 1};
@@ -423,19 +435,23 @@ startAnnotationButton.addEventListener('click', ()=>{
     placeholder.fillColor = 'white';
     placeholder.on('item-replaced',(ev)=>{
         saveAnnotationButton.disabled = false;
-        startAnnotationButton._paperItem = ev.item;
+        data.annotation = ev.item;
     });
 
     featureCollection.addChild(placeholder);
     placeholder.select();
 
-    startAnnotationButton._paperItem = placeholder;
+    data.annotation = placeholder;
 
     saveAnnotationButton.removeEventListener('click', saveAnnotationButton._clickHandler);
     saveAnnotationButton._clickHandler = ()=>{
         saveAnnotationButton.disabled = true;
+        data.croppingItem?.remove();
         const geoJSON = tk.toGeoJSON(svs.paperLayer);
-        console.log('geoJSON', geoJSON);
+        
+        if(data.croppingItem){
+            data.featureCollection.addChild(data.croppingItem);
+        }
 
         const itemID = svs.source.item._id;
         dsaUI.saveAnnotationInDSAFormat(itemID, geoJSON, true).then(d=>{
@@ -521,6 +537,7 @@ function removeTiledImage(tiledImage){
     data.boundingRect.remove();
     data.staticOption.remove();
     data.movingOption.remove();
+    data.annotation?.remove();
     tiledImageMap.delete(tiledImage);
     editButtonMap.delete(data.editButton);
     visibilityButtonMap.delete(data.visibilityButton);
