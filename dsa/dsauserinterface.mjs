@@ -121,17 +121,20 @@ export class DSAUserInterface extends OpenSeadragon.EventSource{
                 }
             });
 
-            // set up handler for view info (x, y, zoom) as hash parameter via dsaUI
-            this._viewer.addHandler('animation-finish',ev=>{
-                let source = this._tileSource;
-                if(!source || !source.item || (source.item._id !== this.hashInfo.image)){
-                    return;
-                }
-                let bounds = viewer.viewport.viewportToImageRectangle(viewer.viewport.getBounds(false));
-                this.hashInfo.update({
-                    bounds: [Math.round(bounds.x), Math.round(bounds.y), Math.round(bounds.x+bounds.width), Math.round(bounds.y+bounds.height)].join('%2C')
+            if(this.options.hash === true){
+                // set up handler for view info (x, y, zoom) as hash parameter via dsaUI
+                this._viewer.addHandler('animation-finish',ev=>{
+                    let source = this._tileSource;
+                    if(!source || !source.item || (source.item._id !== this.hashInfo.image)){
+                        return;
+                    }
+                    let bounds = viewer.viewport.viewportToImageRectangle(viewer.viewport.getBounds(false));
+                    this.hashInfo.update({
+                        bounds: [Math.round(bounds.x), Math.round(bounds.y), Math.round(bounds.x+bounds.width), Math.round(bounds.y+bounds.height)].join('%2C')
+                    });
                 });
-            });
+            }
+            
             
             this.addHandler('set-dsa-instance',event=>{
                 this.hashInfo.update({dsa: event.url});

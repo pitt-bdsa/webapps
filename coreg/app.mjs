@@ -1,9 +1,10 @@
 
-import { RotationControlOverlay } from 'https://cdn.jsdelivr.net/gh/pearcetm/osd-paperjs-annotation@0.4.3/src/js/rotationcontrol.mjs';
-import { AnnotationToolkit } from 'https://cdn.jsdelivr.net/gh/pearcetm/osd-paperjs-annotation@0.4.3/src/js/annotationtoolkit.mjs';
+import { RotationControlOverlay } from 'https://cdn.jsdelivr.net/gh/pearcetm/osd-paperjs-annotation@0.4.4/src/js/rotationcontrol.mjs';
+import { AnnotationToolkit } from 'https://cdn.jsdelivr.net/gh/pearcetm/osd-paperjs-annotation@0.4.4/src/js/annotationtoolkit.mjs';
 import { DSAUserInterface } from '../dsa/dsauserinterface.mjs';
-import { TransformTool } from 'https://cdn.jsdelivr.net/gh/pearcetm/osd-paperjs-annotation@0.4.3/src/js/papertools/transform.mjs';
-import { DragAndDrop } from 'https://cdn.jsdelivr.net/gh/pearcetm/osd-paperjs-annotation@0.4.3/src/js/utils/draganddrop.mjs';
+import { TransformTool } from 'https://cdn.jsdelivr.net/gh/pearcetm/osd-paperjs-annotation@0.4.4/src/js/papertools/transform.mjs';
+import { PointTextTool } from 'https://cdn.jsdelivr.net/gh/pearcetm/osd-paperjs-annotation@0.4.4/src/js/papertools/pointtext.mjs';
+import { DragAndDrop } from 'https://cdn.jsdelivr.net/gh/pearcetm/osd-paperjs-annotation@0.4.4/src/js/utils/draganddrop.mjs';
 
 
 class Transformer extends TransformTool{
@@ -20,15 +21,54 @@ class Transformer extends TransformTool{
     }
 }
 
+class PointTool extends PointTextTool{
+    constructor(paperScope){
+        super(paperScope);
+    }
+    activate(item, text){
+        this._itemToCreate = item;
+        this._items=[item];
+        this.toolbarControl.setItemText(text);
+        this.toolbarControl.input.dispatchEvent(new Event('input'));
+        PointTextTool.prototype.activate.call(this);
+    }
+    getSelectedItems(){
+        //noop
+    }
+    onSelectionChanged(){
+        //noop
+    }
+    setItem(item){
+        this._items=[item];
+    }
+}
+
 // Global DSA linking variables
-const ANNOTATION_NAME = 'XXX'
+const ANNOTATION_NAME = 'WMH'
+const ANNOTATION_DESCRIPTION = 'Created by the MRI-histology co-registration Web App';
 let dragAndDrop;
 
 // Global references
 const tiledImageList = document.querySelector('#tiled-image-list');
 const tiledImageUITemplate = document.querySelector('#tiledImageUI-template');
+const selectStatic = document.querySelector('#static-image');
+const selectMoving = document.querySelector('#moving-image');
+const startTwoPointButton = document.querySelector('#start-two-point');
+const applyTwoPointButton = document.querySelector('#apply-two-point');
+const cancelTwoPointButton = document.querySelector('#cancel-two-point');
+const twoPointItems = {
+    moveA:null,
+    ontoA:null,
+    moveB:null,
+    ontoB:null
+}
+const startAnnotationButton = document.querySelector('#start-annotation');
+const saveAnnotationButton = document.querySelector('#save-annotation');
 const tiledImageMap = new Map();
 const editButtonMap = new Map();
+const cropButtonMap = new Map();
+const staticMap = new Map();
+const movingMap = new Map();
 const visibilityButtonMap = new Map();
 
 // don't navigate away accidentally
@@ -50,7 +90,7 @@ let viewer = window.viewer = OpenSeadragon({
 });
 
 // DSA setup
-const dsaUI = new DSAUserInterface(viewer, {openFolder:true});
+const dsaUI = new DSAUserInterface(viewer, {hash:"no-nav", openFolder:true});
 dsaUI.header.appendTo('.dsa-ui-container');
 
 document.querySelector('input[type=file]').addEventListener('change',function(){
@@ -59,7 +99,42 @@ document.querySelector('input[type=file]').addEventListener('change',function(){
 });
 
 dsaUI.addHandler('open-tile-source', ev=>{
-    viewer.open(ev.tileSource);
+    
+    const tileSources = Array.isArray(ev.tileSource) ? ev.tileSource : [ev.tileSource];
+
+    function getType(ts){
+        if(ts.name.match(/gross/i)) return 0;
+        if(ts.name.match(/t1/i)) return 1;
+        if(ts.name.match(/t2/i)) return 2;
+        if(ts.name.match(/section|\.tif/i)) return 3;
+        if(ts.name.match(/\.svs/i)) return 4;
+        if(ts.name.match(/thumbnail/i)) return -1;
+        return 5;
+    }
+    for(const tileSource of tileSources){
+        tileSource.type = getType(tileSource);
+    }
+    const sorted = tileSources.sort((a,b) => a.type - b.type).filter(a => a.type >= 0).map(ts=>{
+        let x = 0;
+        let y = 0;
+        if(ts.type >= 3){
+            x = 1.1;
+        }
+        if(ts.type === 3){
+            y = 1.1;
+        }
+        if(ts.type >= 5){
+            x = 2.2;
+        }
+        return {
+            tileSource: ts,
+            x: x,
+            y: y
+        }
+    });
+
+    
+    viewer.open(sorted);
 })
 
 
@@ -83,23 +158,26 @@ tk.activateTool = function(name){
 } 
 
 const transformTool = new Transformer(tk.paperScope);
+const pointTool = new PointTool(tk.paperScope);
+dsaUI.addHandler('open-tile-source', ev=> {
+    transformTool.deactivate(true);
+    pointTool.deactivate(true);
+});
 
-
+window.pointTool = pointTool;
 
 viewer.world.addHandler('add-item', (event)=>{
-    console.log('add-item', event);
     setupTiledImage(event.item);
     const index = viewer.world.getItemCount()-1;
-    event.item.setPosition({x: index * 0.3, y: index * 0.3});
+    // event.item.setPosition({x: index * 0.3, y: index * 0.3});
 });
 
 viewer.world.addHandler('remove-item', (event)=>{
-    console.log('remove-item', event);
     removeTiledImage(event.item);
 });
 
 setupLayerUI();
-
+setupTwoPointUI();
 
 
 function setupLayerUI(){
@@ -109,15 +187,21 @@ function setupLayerUI(){
             const tiledImage = visibilityButtonMap.get(event.target);
             if(tiledImage.opacity === 1){
                 tiledImage.setOpacity(0.5);
+                event.target.innerText = '50%';
             } else if (tiledImage.opacity === 0.5){
                 tiledImage.setOpacity(0);
+                event.target.innerText = '0%';
             } else {
                 tiledImage.setOpacity(1);
+                event.target.innerText = '100%';
             }
 
         } else if(event.target.matches('.edit')){
             event.preventDefault();
             editButtonClicked(event.target);
+        } else if(event.target.matches('.crop')){
+            event.preventDefault();
+            cropButtonClicked(event.target);
         }
     });
 
@@ -126,10 +210,6 @@ function setupLayerUI(){
         dropTarget: tiledImageList,
         selector:'.tiledImageUI',
         onDrop: (ev)=>{
-            console.log('drop', ev);
-            // tiledImageList.querySelectorAll('.tiledImageUI').forEach(element=>{
-
-            // })
             const elementList = Array.from(tiledImageList.querySelectorAll('.tiledImageUI'));
             const itemArray = [];
             for(const [tiledImage, data] of tiledImageMap){
@@ -140,6 +220,116 @@ function setupLayerUI(){
             })
         }
     })
+}
+
+function setupTwoPointUI(){
+    selectMoving.addEventListener('change',resetTwoPointUI);
+    selectStatic.addEventListener('change',resetTwoPointUI);
+    cancelTwoPointButton.addEventListener('click', resetTwoPointUI);
+    applyTwoPointButton.addEventListener('click', doTwoPointRegistration);
+    startTwoPointButton.addEventListener('click',()=>{
+        if(startTwoPointButton.classList.contains('active')){
+            return;
+        }
+        startTwoPointButton.disabled = true;
+        const movingOption = selectMoving.options[selectMoving.selectedIndex];
+        const movingTiledImage = movingMap.get(movingOption);
+        const staticOption = selectStatic.options[selectStatic.selectedIndex];
+        const staticTiledImage = staticMap.get(staticOption);
+        getUserPoint(movingTiledImage, 'Move A', 'red').then(item=>{
+            twoPointItems.moveA = item;
+        }).then(()=>getUserPoint(staticTiledImage, 'Onto A', 'blue')).then(item=>{
+            twoPointItems.ontoA = item;
+        }).then(()=>getUserPoint(movingTiledImage, 'Move B', 'red')).then(item=>{
+            twoPointItems.moveB = item;
+        }).then(()=>getUserPoint(staticTiledImage, 'Onto B', 'blue')).then(item=>{
+            twoPointItems.ontoB = item;
+            applyTwoPointButton.disabled = false;
+            applyTwoPointButton.classList.add('active');
+            pointTool.deactivate(true);
+        })
+
+    });
+
+    resetTwoPointUI();
+}
+
+function resetTwoPointUI(){
+    pointTool.deactivate(true);
+    applyTwoPointButton.disabled = true;
+    applyTwoPointButton.classList.remove('active');
+    for(const [key,item] of Object.entries(twoPointItems)){
+        item?.remove();
+        twoPointItems[key] = null;
+    }
+    const movingOption = selectMoving.options[selectMoving.selectedIndex];
+    const movingTiledImage = movingMap.get(movingOption);
+    const staticOption = selectStatic.options[selectStatic.selectedIndex];
+    const staticTiledImage = staticMap.get(staticOption);
+    if(movingTiledImage){
+        tiledImageMap.get(movingTiledImage).boundingRect.visible = false;
+    }
+    if(staticTiledImage){
+        tiledImageMap.get(staticTiledImage).boundingRect.visible = false;
+    }
+    
+    startTwoPointButton.disabled = false;
+}
+
+async function getUserPoint(tiledImage, text, color){
+    return new Promise((resolve,reject)=>{
+        // wrap this in setTimeout to circumvent the toolbar from deactivating the tool
+        setTimeout(()=>{
+            
+            const boundingRect = tiledImageMap.get(tiledImage).boundingRect;
+            boundingRect.visible = true;
+            boundingRect.strokeColor = color;
+            const placeholder = tk.makePlaceholderItem().paperItem;
+            placeholder.style.set({strokeColor: color, fillColor: color});
+            tiledImage.paperLayer.addChild(placeholder);
+            pointTool.activate(placeholder,text);
+            placeholder.on('item-replaced',(ev)=>{
+                // ev.item.children[1].content = 'Move A'
+                pointTool.setItem(ev.item);
+                tiledImageMap.get(tiledImage).boundingRect.visible = false;
+                resolve(ev.item);
+            })
+        }, 10);
+        
+    })
+}
+
+function doTwoPointRegistration(){
+    const a1 = twoPointItems.moveA;
+    const a2 = twoPointItems.moveB;
+    const b1 = twoPointItems.ontoA;
+    const b2 = twoPointItems.ontoB;
+
+    const tiledImageA = a1.layer.tiledImage;
+    const tiledImageB = b1.layer.tiledImage;
+
+    const posA1 = tiledImageA.imageToViewportCoordinates(a1.position.x, a1.position.y, false);
+    const posA2 = tiledImageA.imageToViewportCoordinates(a2.position.x, a2.position.y, false);
+    const posB1 = tiledImageB.imageToViewportCoordinates(b1.position.x, b1.position.y, false);
+    const posB2 = tiledImageB.imageToViewportCoordinates(b2.position.x, b2.position.y, false);
+
+    const scaleFactor =  posB2.distanceTo(posB1) / posA2.distanceTo(posA1);
+
+    const angleA = new tk.paperScope.Point(posA2.minus(posA1)).angle;
+    const angleB = new tk.paperScope.Point(posB2.minus(posB1)).angle;
+    const deltaAngle = angleB - angleA;
+
+    tiledImageA.setWidth(tiledImageA.getBoundsNoRotate(false).width * scaleFactor, false);
+    tiledImageA.setRotation(tiledImageA.getRotation(false) + deltaAngle, false);
+
+    const newPosA1 = tiledImageA.imageToViewportCoordinates(a1.position.x, a1.position.y, false);
+
+    const newBounds = tiledImageA.getBoundsNoRotate(false);
+    const deltaPosition = posB1.minus(newPosA1);
+    const newPosition = new OpenSeadragon.Point(newBounds.x, newBounds.y).plus(deltaPosition);
+    tiledImageA.setPosition(newPosition);
+
+    resetTwoPointUI();
 }
 
 function editButtonClicked(editButton){
@@ -164,28 +354,139 @@ function editButtonClicked(editButton){
     }
 }
 
+function cropButtonClicked(cropButton){
+    const tiledImage = cropButtonMap.get(cropButton);
+    const isCropped = tiledImage._croppingPolygons;
+    const croppingPolygon = tiledImage._croppingItem;
+    if(isCropped){
+        // we're already cropped - remove the cropping from the tiledImage (but don't get rid of the polygon itself)
+        tiledImage.resetCroppingPolygons();
+        tiledImage._croppingItem.isBoundingElement = false; // remove this as a bounding element too
+        viewer.forceRedraw();
+        cropButton.innerText = 'Crop';
+    } else if (croppingPolygon && croppingPolygon.selected){
+        // we've been drawing the cropping polygon. Time to apply it.
+        if(tiledImage._croppingItem.area > 0){
+            tiledImage.setCroppingPolygons(tiledImage._croppingItem.children.map(path => path.segments.map(s=>s.point)));
+            tiledImage._croppingItem.isBoundingElement = true;
+        } 
+        tiledImage._croppingItem.deselect();
+        viewer.forceRedraw();
+        cropButton.innerText = 'Clear';
+    } else if (croppingPolygon){
+        // we already have a polygon, but it isn't currently being used for cropping. Select it now.
+        tiledImage.resetCroppingPolygons();
+        croppingPolygon.select();
+        viewer.forceRedraw();
+        cropButton.innerText = 'Apply';
+    } else {
+        // start cropping
+        let placeholder = tk.makePlaceholderItem().paperItem;
+        tiledImage.paperLayer.addChild(placeholder);
+        placeholder.select();
+        tiledImage._croppingItem = placeholder;
+        placeholder.on('item-replaced', ev=>{
+            tiledImage._croppingItem = ev.item;
+        });
+        cropButton.innerText = 'Apply';
+    }
+    
+}
+
+startAnnotationButton.addEventListener('click', ()=>{
+    if(startAnnotationButton._paperItem){
+        startAnnotationButton._paperItem.select();
+        saveAnnotationButton.disabled = false;
+        return;
+    }
+    let svs;
+    for(let i = 0; i < viewer.world.getItemCount(); i++){
+        let tiledImage = viewer.world.getItemAt(i);
+        if(tiledImage.source.name.endsWith('svs')){
+            svs = tiledImage;
+            break;
+        }
+    }
+    if(!svs){
+        alert('No file with a name ending in svs was found');
+        return;
+    }
+
+    const featureCollection = tk.addEmptyFeatureCollectionGroup();
+    featureCollection.displayName = ANNOTATION_NAME;
+    featureCollection.data.userdata = { dsa: { description: ANNOTATION_DESCRIPTION} };
+    svs.paperLayer.addChild(featureCollection);
+
+    const placeholder = tk.makePlaceholderItem().paperItem;
+    placeholder.rescale = {strokeWidth: 1};
+    placeholder.strokeColor = 'black';
+    placeholder.fillColor = 'white';
+    placeholder.on('item-replaced',(ev)=>{
+        saveAnnotationButton.disabled = false;
+        startAnnotationButton._paperItem = ev.item;
+    });
+
+    featureCollection.addChild(placeholder);
+    placeholder.select();
+
+    startAnnotationButton._paperItem = placeholder;
+
+    saveAnnotationButton.removeEventListener('click', saveAnnotationButton._clickHandler);
+    saveAnnotationButton._clickHandler = ()=>{
+        saveAnnotationButton.disabled = true;
+        const geoJSON = tk.toGeoJSON(svs.paperLayer);
+        console.log('geoJSON', geoJSON);
+
+        const itemID = svs.source.item._id;
+        dsaUI.saveAnnotationInDSAFormat(itemID, geoJSON, true).then(d=>{
+            window.alert('Success! The annotation has been saved.')
+        }).catch(e=>{
+            console.error(e);
+            window.alert('Error! There was a problem saving the segmentation. Do you need to log in to the DSA?');
+        });
+
+        
+    }
+    saveAnnotationButton.addEventListener('click',saveAnnotationButton._clickHandler);
+})
+
+
 function setupTiledImage(tiledImage){
     const element = createTiledImageUI(tiledImage);
     const bounds = tiledImage.getBounds();
     const boundingRect = new paper.Path.Rectangle(bounds);
     boundingRect.fillColor = new paper.Color(0, 0, 0, 0.0001);
     boundingRect.rescale = {strokeWidth: 2};
+
+    const staticOption = document.createElement('option');
+    staticOption.textContent = tiledImage.source.name;
+    const movingOption = staticOption.cloneNode(true);
+    selectStatic.add(staticOption);
+    selectMoving.add(movingOption);
+
     const data = {
         element,
         boundingRect,
         editButton: element.querySelector('button.edit'),
-        visibilityButton: element.querySelector('button.visibility')
+        visibilityButton: element.querySelector('button.visibility'),
+        cropButton: element.querySelector('button.crop'),
+        staticOption: staticOption,
+        movingOption: movingOption
     }
     tiledImageMap.set(tiledImage, data);
     editButtonMap.set(data.editButton, tiledImage);
+    cropButtonMap.set(data.cropButton, tiledImage);
+    staticMap.set(staticOption, tiledImage);
+    movingMap.set(movingOption, tiledImage);
     visibilityButtonMap.set(data.visibilityButton, tiledImage);
     tiledImage._boundingRect = boundingRect;
     viewer.viewport.paperLayer.addChild(boundingRect);
 
     tiledImage.addHandler('bounds-change',()=>{
         if(!tiledImage._beingTransformedByTool){
-            const newBounds = tiledImage.getBounds();
+            const newBounds = tiledImage.getBoundsNoRotate();
             const newRect = new paper.Path.Rectangle(newBounds);
+            newRect.rotate(tiledImage.getRotation());
             boundingRect.segments = newRect.segments;
             newRect.remove();
         }
@@ -218,9 +519,14 @@ function removeTiledImage(tiledImage){
     const data = tiledImageMap.get(tiledImage);
     data.element.remove();
     data.boundingRect.remove();
+    data.staticOption.remove();
+    data.movingOption.remove();
     tiledImageMap.delete(tiledImage);
     editButtonMap.delete(data.editButton);
     visibilityButtonMap.delete(data.visibilityButton);
+    cropButtonMap.delete(data.cropbutton);
+    staticMap.delete(data.staticOption);
+    movingMap.delete(data.movingOption);
 }
 
 function createTiledImageUI(tiledImage){

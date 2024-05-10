@@ -33,15 +33,49 @@ body{
 .viewer{
     height:100%;
 }
+#tiled-image-list{
+    display:grid;
+    grid-template-columns: auto 1fr auto auto auto;
+    gap: 5px;
+    padding:5px;
+}
+.tiledImageUI{
+    display: grid;
+    grid-column: 1 / -1;
+    grid-template-columns: subgrid;
+}
 
-/* .annotation-ui-drawing-toolbar{
+.annotation-ui-drawing-toolbar{
     width:25em;
-} */
+}
 
 button.active{
     background-color:lightgreen;
 }
-
+#two-point-select{
+    display:grid;
+    grid-template-columns: auto 1fr;
+    gap:0.5em;
+}
+#two-point-buttons{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:0.5em;
+    padding:1em;
+}
+#two-point-finish-row{
+    display: grid;
+    grid-column: 1 / -1;
+    grid-template-columns: subgrid;
+    padding-top:0.5em;
+    border-top:thin gray solid;
+}
+h4{
+    margin-bottom:0.5em;
+}
+#tissue-annotation{
+    max-width:20em;
+}
 
 
 input.dsa-link{

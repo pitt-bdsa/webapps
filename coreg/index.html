@@ -15,23 +15,49 @@
 </head>
 <body>
     <div class="content">
-        <div id="header">
+        <div id="header"><!-- Top row--> 
             <div class="dsa-ui-container"></div>
             <div><input type='file' accept="image/*" multiple></div>
         </div>
-        <div id="viewer-container">
+        <div id="viewer-container"> <!-- Left column, second row--> 
             <div id='viewer' class="viewer"></div>
         </div>
-        <div id="layer-controls">
-            <span>Layers</span>
-            <div id="tiled-image-list"></div>
+        <div> <!-- Right column, second row--> 
+            <div id="layer-controls">
+                <h4>Current images</h4>
+                <div id="tiled-image-list"></div>
+            </div>
+            <div id="two-point-registration">
+                <h4>Two-point registration</h4>
+                <div>
+                    <div id="two-point-select">
+                        <label>Move:</label><select id="moving-image"></select>
+                        <label>Onto:</label><select id="static-image"></select>
+                    </div>
+                    <div id="two-point-buttons">
+                        <button id="start-two-point">Start</button>
+                        <div id="two-point-finish-row">
+                            <button id="apply-two-point">Apply</button><button id="cancel-two-point">Cancel</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div id="tissue-annotation">
+                <h4>Annotate WMH</h4>
+                <div>It is recommended to crop the background away from the tissue area before annotating the WHM.</div>
+                <div>
+                    <button id="start-annotation">Start</button><button id="save-annotation" disabled>Save</button>
+                </div>
+            </div>
         </div>
     </div>
     <template id="tiledImageUI-template">
         <div class='tiledImageUI'>
+            <button class="visibility">100%</button>
             <span class="name"></span>
-            <button class="visibility">Show</button>
-            <button class="edit">Edit</button>
+            <button class="crop">Crop</button>
+            <button class="edit">Move</button>
+            <button class="flip">Flip</button>
         </div>
     </template>
 </body>
