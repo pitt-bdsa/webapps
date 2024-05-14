@@ -33,7 +33,9 @@ body{
 .viewer{
     height:100%;
 }
-
+#button-set{
+    white-space: nowrap;
+}
 button.active {
     background-color: lightblue;
 }

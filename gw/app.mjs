@@ -149,7 +149,7 @@ startExclude.addEventListener('click',function(){
     featureCollection.selected = false;
 
     finishExclude.disabled = false; // enable the finish button now rather than checking the area since it can be empty
-    
+
     if(isActive){
         annotations['Exclude'].select();
     } else {
@@ -162,24 +162,28 @@ startExclude.addEventListener('click',function(){
 // Set up the "Finish Gray" button
 finishGray.addEventListener('click',function(){
     this.classList.add('complete');
+    makeNonOverlapping('Gray Matter', false);
     testComplete();
 });
 
 // Set up the "Finish White" button
 finishWhite.addEventListener('click',function(){
     this.classList.add('complete');
+    makeNonOverlapping('White Matter', false);
     testComplete();
 });
 
 // Set up the "Finish Leptomeninges" button
 finishLeptomeninges.addEventListener('click',function(){
     this.classList.add('complete');
+    makeNonOverlapping('Leptomeninges', false);
     testComplete();
 });
 
 // Set up the "Finish Exclude" button
 finishExclude.addEventListener('click',function(){
     this.classList.add('complete');
+    makeNonOverlapping('Exclude', true);
     testComplete();
 });
 
@@ -284,6 +288,28 @@ function setupMultiPolygon(name, color, parent){
     })
 }
 
+function makeNonOverlapping(name, overwriteOthers){
+    if(overwriteOthers){
+        const keys = Object.keys(annotations).filter(key => key !== name);
+        let thisAnnotation = annotations[name];
+        for(const key of keys){
+            const other = annotations[key];
+            annotations[key] = other.subtract(thisAnnotation, true);
+            other.remove();
+        }
+        thisAnnotation.bringToFront();
+    } else {
+        const keys = Object.keys(annotations).filter(key => key !== name);
+        let thisAnnotation = annotations[name];
+        for(const key of keys){
+            const other = annotations[key];
+            const ref = thisAnnotation;
+            thisAnnotation = thisAnnotation.subtract(other, true);
+            ref.remove();
+        }
+        annotations[name] = thisAnnotation;
+    }
+}
 
 function setupKeypressHandlers(){
     
