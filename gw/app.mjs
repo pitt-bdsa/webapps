@@ -14,13 +14,16 @@ const startWhite = document.querySelector('#start-white');
 const finishWhite = document.querySelector('#finish-white');
 const startLeptomeninges = document.querySelector('#start-leptomeninges');
 const finishLeptomeninges = document.querySelector('#finish-leptomeninges');
+const startExclude = document.querySelector('#start-exclude');
+const finishExclude = document.querySelector('#finish-exclude');
 const submitButton = document.querySelector('#submit');
 
 let featureCollection;
 const annotations = {
     'Gray Matter': null,
     'White Matter': null,
-    'Leptomeninges': null
+    'Leptomeninges': null,
+    'Exclude': null,
 }
 
 // don't navigate away accidentally
@@ -93,6 +96,7 @@ startGray.addEventListener('click',function(){
     const isActive = this.classList.toggle('active');
     startWhite.classList.remove('active');
     startLeptomeninges.classList.remove('active');
+    startExclude.classList.remove('active');
     featureCollection.selected = false;
     if(isActive){
         annotations['Gray Matter'].select();
@@ -109,6 +113,7 @@ startWhite.addEventListener('click',function(){
     const isActive = this.classList.toggle('active');
     startGray.classList.remove('active');
     startLeptomeninges.classList.remove('active');
+    startExclude.classList.remove('active');
     featureCollection.selected = false;
     if(isActive){
         annotations['White Matter'].select();
@@ -124,11 +129,31 @@ startLeptomeninges.addEventListener('click',function(){
     const isActive = this.classList.toggle('active');
     startGray.classList.remove('active');
     startWhite.classList.remove('active');
+    startExclude.classList.remove('active');
     featureCollection.selected = false;
     if(isActive){
         annotations['Leptomeninges'].select();
     } else {
         annotations['Leptomeninges'].deselect();
+        tk.activateTool('default');
+        tk._annotationUI._toolbar.setMode();
+    }
+});
+
+// Set up the "Start Leptomeninges" button
+startExclude.addEventListener('click',function(){
+    const isActive = this.classList.toggle('active');
+    startGray.classList.remove('active');
+    startWhite.classList.remove('active');
+    startLeptomeninges.classList.remove('active');
+    featureCollection.selected = false;
+
+    finishExclude.disabled = false; // enable the finish button now rather than checking the area since it can be empty
+    
+    if(isActive){
+        annotations['Exclude'].select();
+    } else {
+        annotations['Exclude'].deselect();
         tk.activateTool('default');
         tk._annotationUI._toolbar.setMode();
     }
@@ -148,6 +173,12 @@ finishWhite.addEventListener('click',function(){
 
 // Set up the "Finish Leptomeninges" button
 finishLeptomeninges.addEventListener('click',function(){
+    this.classList.add('complete');
+    testComplete();
+});
+
+// Set up the "Finish Exclude" button
+finishExclude.addEventListener('click',function(){
     this.classList.add('complete');
     testComplete();
 });
@@ -176,7 +207,9 @@ function testAreas(){
 }
 
 function testComplete(){
-    if(document.querySelectorAll('#annotation-controls .finish-button.complete').length === 3){
+    const finishButtons = document.querySelectorAll('#annotation-controls .finish-button');
+    const finished = document.querySelectorAll('#annotation-controls .finish-button.complete');
+    if(finished.length === finishButtons.length){
         submitButton.disabled = false || submitButton.classList.contains('pending');
     }
 }
@@ -211,7 +244,8 @@ function setupFeatureCollection(existing){
         featureCollection.data.userdata = { dsa: { description: ANNOTATION_DESCRIPTION} };
         setupMultiPolygon('Gray Matter', 'green', featureCollection);
         setupMultiPolygon('White Matter', 'blue', featureCollection);
-        setupMultiPolygon('Leptomeninges', 'red', featureCollection);
+        setupMultiPolygon('Leptomeninges', 'black', featureCollection);
+        setupMultiPolygon('Exclude', 'red', featureCollection);
     }
     
     // reset the button states
