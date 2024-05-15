@@ -294,21 +294,26 @@ function makeNonOverlapping(name, overwriteOthers){
         let thisAnnotation = annotations[name];
         for(const key of keys){
             const other = annotations[key];
-            const newOther = other.subtract(thisAnnotation, false);
+            const newOther = other.subtract(thisAnnotation, false).toCompoundPath();
             other.removeChildren();
-            other.addChildren(newOther.toCompoundPath().children);
+            for(const child of newOther.children){
+                other.addChild(child.clone());
+            }
+            newOther.remove();
         }
-        thisAnnotation.bringToFront();
     } else {
         const keys = Object.keys(annotations).filter(key => key !== name);
         let thisAnnotation = annotations[name];
         for(const key of keys){
             const other = annotations[key];
-            const newAnnotation = thisAnnotation.subtract(other, false);
+            const newAnnotation = thisAnnotation.subtract(other, false).toCompoundPath();
             thisAnnotation.removeChildren();
-            thisAnnotation.addChildren(newAnnotation.toCompoundPath().children);
+            // thisAnnotation.addChildren(newAnnotation.children);
+            for(const child of newAnnotation.children){
+                thisAnnotation.addChild(child.clone());
+            }
+            newAnnotation.remove();
         }
-        
     }
 }
 
