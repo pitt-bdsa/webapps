@@ -294,8 +294,9 @@ function makeNonOverlapping(name, overwriteOthers){
         let thisAnnotation = annotations[name];
         for(const key of keys){
             const other = annotations[key];
-            annotations[key] = other.subtract(thisAnnotation, true);
-            other.remove();
+            const newOther = other.subtract(thisAnnotation, false);
+            other.removeChildren();
+            other.addChildren(newOther.toCompoundPath().children);
         }
         thisAnnotation.bringToFront();
     } else {
@@ -303,11 +304,11 @@ function makeNonOverlapping(name, overwriteOthers){
         let thisAnnotation = annotations[name];
         for(const key of keys){
             const other = annotations[key];
-            const ref = thisAnnotation;
-            thisAnnotation = thisAnnotation.subtract(other, true);
-            ref.remove();
+            const newAnnotation = thisAnnotation.subtract(other, false);
+            thisAnnotation.removeChildren();
+            thisAnnotation.addChildren(newAnnotation.toCompoundPath().children);
         }
-        annotations[name] = thisAnnotation;
+        
     }
 }
 
