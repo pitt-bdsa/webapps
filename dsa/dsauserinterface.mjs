@@ -8,6 +8,7 @@ export class DSAUserInterface extends OpenSeadragon.EventSource{
         let defaultOptions = {
             hash: true,
             openFolder: false,
+            showHeader:true
         }
 
         this.options = Object.assign(defaultOptions, options);
@@ -17,7 +18,7 @@ export class DSAUserInterface extends OpenSeadragon.EventSource{
         this._currentItem = null;
         this._currentAnnotation = null;
 
-        this.hashInfo = new HashInfo('dsa','image','bounds');
+        this.hashInfo = new HashInfo('dsa','image','bounds','showHeader');
         
         // API for UI elements
         this.dialog = $(dialogHtml());
@@ -86,6 +87,11 @@ export class DSAUserInterface extends OpenSeadragon.EventSource{
         if(this.options.hash){
             // initialized based on hash
             this.hashInfo.read();
+
+            if(!(this.options.showHeader === true || (this.options.showHeader==='hash' && this.hashInfo.showHeader==='true'))){
+                this.header.hide();
+            }
+            
             if(this.hashInfo.dsa){
                 let success = this.connectToDSA(this.hashInfo.dsa);
                 if(success && this.hashInfo.image){

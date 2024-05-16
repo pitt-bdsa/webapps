@@ -47,7 +47,7 @@ let viewer = window.viewer = OpenSeadragon({
 });
 
 // DSA setup
-const dsaUI = new DSAUserInterface(viewer);
+const dsaUI = new DSAUserInterface(viewer,{showHeader:'hash'});
 dsaUI.header.appendTo('.dsa-ui-container');
 
 // Add rotation control
@@ -183,6 +183,18 @@ finishLeptomeninges.addEventListener('click',function(){
 // Set up the "Finish Exclude" button
 finishExclude.addEventListener('click',function(){
     this.classList.add('complete');
+    // make Exclude a polygon type if the user hasn't drawn anything
+    if(annotations['Exclude']){
+        const geometry = {
+            type: 'Polygon',
+            coordinates: [[[-1, -1], [-1, 0], [0, 0], [0, -1]]],
+        }
+        const newItem = tk.paperScope.Item.fromGeoJSON(geometry);
+        annotations['Exclude'].replaceWith(newItem);
+        annotations['Exclude'] = newItem;
+    }
+    
+
     makeNonOverlapping('Exclude', true);
     testComplete();
 });
@@ -253,8 +265,8 @@ function setupFeatureCollection(existing){
     }
     
     // reset the button states
-    document.querySelectorAll('.annotation-controls button.complete').forEach(b=>b.classList.remove('complete'));
-    document.querySelectorAll('.annotation-controls button.active').forEach(b=>b.classList.remove('active'));
+    document.querySelectorAll('#annotation-controls button.complete').forEach(b=>b.classList.remove('complete'));
+    document.querySelectorAll('#annotation-controls button.active').forEach(b=>b.classList.remove('active'));
 
 }
 
