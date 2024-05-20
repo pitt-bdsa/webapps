@@ -224,7 +224,7 @@ export class DSAUserInterface extends OpenSeadragon.EventSource{
         const annotationID = geoJSON.properties.userdata?.dsa?.annotationId;
         
         const data = {
-            name: geoJSON.label,
+            name: geoJSON.properties.userdata?.dsa?.name || geoJSON.label,
             description: geoJSON.properties.userdata?.dsa?.description || 'Created by DSAUserInterface.mjs adapter',
             elements: this.adapter.featureCollectionToElements(geoJSON)
         }

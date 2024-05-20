@@ -123,7 +123,7 @@ function elementToFeature(element){
         type:'Feature',
         geometry:mapElementToGeometryType(element),
         properties:{
-            userdata:{id: element.id},
+            userdata:Object.assign({}, {dsa:{id: element.id}}, element.user),
             fillColor:element.fillColor || 'rgba(255, 255, 255, 0)', // default to white transparent
             strokeColor:element.lineColor || 'rgba(0, 0, 0, 0)', // default to black transparent
             strokeWidth:typeof element.lineWidth == 'undefined' ? 1 : element.lineWidth,

@@ -1,6 +1,6 @@
 
-import { RotationControlOverlay } from 'https://cdn.jsdelivr.net/gh/pearcetm/osd-paperjs-annotation@0.4.5/src/js/rotationcontrol.mjs';
-import { AnnotationToolkit } from 'https://cdn.jsdelivr.net/gh/pearcetm/osd-paperjs-annotation@0.4.5/src/js/annotationtoolkit.mjs';
+import { RotationControlOverlay } from 'https://cdn.jsdelivr.net/gh/pearcetm/osd-paperjs-annotation@0.4.6/src/js/rotationcontrol.mjs';
+import { AnnotationToolkit } from 'https://cdn.jsdelivr.net/gh/pearcetm/osd-paperjs-annotation@0.4.6/src/js/annotationtoolkit.mjs';
 import { DSAUserInterface } from '../dsa/dsauserinterface.mjs';
 
 // Global DSA linking variables
