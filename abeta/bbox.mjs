@@ -282,7 +282,7 @@ export class BBox extends OpenSeadragon.EventSource{
         this.components.editROIButton.innerText = notEditingText;
         this.components.editROIButton.disabled = true; //disable this button until an ROI is activated
 
-        this.components.deleteROIButton = this._createComponent('button', div, 'deleteROI');
+        this.components.deleteROIButton = this._createComponent('button', div, 'deleteROI', 'delete-button');
         this.components.deleteROIButton.innerText = 'Delete active ROI';
         this.components.deleteROIButton.disabled = true; //disable this button until an ROI is activated
 
@@ -307,7 +307,6 @@ export class BBox extends OpenSeadragon.EventSource{
             // set the dropdown to the default option
             this.components.roiDropdown.value = '';
             this.components.roiDropdown.dispatchEvent(new Event('change'));
-            
         }
 
         
@@ -352,7 +351,12 @@ export class BBox extends OpenSeadragon.EventSource{
 
         // Set up the "Delete" button
         const deleteButton = this.components.deleteROIButton;
-        deleteButton.addEventListener('click',removeROI);
+        deleteButton.addEventListener('click',()=>{
+            const result = window.confirm('Delete this ROI and associated bounding boxes?');
+            if(result){
+                removeROI();
+            }
+        });
 
     }
     _createRoiSelector(){
@@ -548,8 +552,9 @@ export class BBox extends OpenSeadragon.EventSource{
         prevClass.disabled = true;
         nextClass.disabled = true;
 
-        const deleteBBoxButton = this.components.pickBBoxButton = this._createComponent('button', content, 'deleteBBox');
+        const deleteBBoxButton = this.components.pickBBoxButton = this._createComponent('button', content, 'deleteBBox',['delete-button']);
         deleteBBoxButton.innerText = 'Delete';
+        deleteBBoxButton.disabled = true;
 
         content.addEventListener('activated', ()=> {
             this.tk.activateTool('default');
@@ -630,6 +635,7 @@ export class BBox extends OpenSeadragon.EventSource{
             assignDropdown.disabled = shouldDisableControls;
             nextClass.disabled = shouldDisableControls;
             prevClass.disabled = shouldDisableControls;
+            deleteBBoxButton.disabled = shouldDisableControls;
 
             // if all selected items are the same class, set the value of the dropdown to that class. Otherwise set it to default.
             if(selectedClasses.length === 1){
@@ -826,7 +832,12 @@ export class BBox extends OpenSeadragon.EventSource{
     _initROI(group){
 
         this._ROIMap[group.displayName] = group;
-        group.data.userdata = {dsa:{name: this.options.annotationName, description: this.options.annotationDescription}};
+        if(!group.data.userdata){
+            group.data.userdata = {}
+        }
+        if(!group.data.userdata.dsa){
+            group.data.userdata.dsa = {name: this.options.annotationName, description: this.options.annotationDescription};
+        }
     
         const option = this._createDropdownOption(group.displayName, true);
         group.data.option = option;

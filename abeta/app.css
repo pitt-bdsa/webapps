@@ -77,6 +77,11 @@ button.active {
     align-items:center;
     margin: 0 0.3em;
 }
+.delete-button{
+    background-color:palevioletred;
+    margin-left:2em;
+}
+
 
 input.dsa-link{
     width:100%;
