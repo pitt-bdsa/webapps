@@ -107,9 +107,15 @@ export class BBox extends OpenSeadragon.EventSource{
 
         // set up the UI for the new layers
         this.viewer.world.getItemAt(0).paperLayer.children.forEach(group=>{
-            const isROI = group.children.filter(item=>item.data.userdata?.role === 'ROI').length > 0;
+            const ROIs =  group.children.filter(item=>item.data.userdata?.role === 'ROI');
+            const isROI = ROIs.length > 0;
             if(isROI){
                 console.log('feature-collection-added event', group.displayName);
+                const groupUserdata = ROIs[0].data.userdata?.featureCollection;
+                if(groupUserdata){
+                    delete ROIs[0].data.userdata.featureCollection;
+                    group.data.userdata = Object.assign({}, group.data.userdata, groupUserdata);
+                }
                 this._initROI(group);
                 // const label = group.displayName;
                 // const option = this._createDropdownOption(label);
@@ -125,14 +131,15 @@ export class BBox extends OpenSeadragon.EventSource{
     }
 
     getDSACompatibleGeoJSON(){
-        const geoJSON = this.tk.toGeoJSON();
-        const featureCollections = this.tk.getItems();
-        geoJSON.forEach(fc => {
-            const ROI = fc.features.filter(feature=>feature.properties.userdata?.role === 'ROI')[0];
-            ROI.properties.userdata = Object.assign({}, ROI.properties.userdata, {})
-        })
+        // const geoJSON = this.tk.toGeoJSON();
+        const featureCollections = this.tk.paperScope.project.getItems({match:layer=>layer.isGeoJSONFeatureCollection});
+        featureCollections.forEach(fc => {
+            const ROI = fc.children.filter(item=>item.data.userdata?.role === 'ROI')[0];
+            ROI.data.userdata = Object.assign({}, ROI.data.userdata, {featureCollectionUserdata:fc.data.userdata});
+        });
 
-        return geoJSON;
+
+        return this.tk.toGeoJSON();
     }
 
     _setupBboxTool(){
