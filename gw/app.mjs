@@ -44,6 +44,7 @@ let viewer = window.viewer = OpenSeadragon({
     crossOriginPolicy: 'Anonymous',
     ajaxWithCredentials: false,
     showNavigator:true,
+    sequenceMode:true,
 });
 
 // DSA setup

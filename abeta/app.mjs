@@ -6,7 +6,7 @@ import { BBox } from './bbox.mjs';
 import { DSAUserInterface } from '../dsa/dsauserinterface.mjs';
 
 
-const ANNOTATION_NAME = 'A-beta bounding boxes';
+const ANNOTATION_TYPE = 'A-beta bounding boxes';
 const ANNOTATION_DESCRIPTION = 'Created by the A-Beta Bounding Box App';
 
 // don't navigate away accidentally
@@ -24,6 +24,8 @@ let viewer = window.viewer = OpenSeadragon({
     crossOriginPolicy: 'Anonymous',
     ajaxWithCredentials: false,
     showNavigator:true,
+    drawer:'webgl',
+    // immediateRender: true,
 });
 
 // DSA setup
@@ -45,7 +47,7 @@ const bboxApp = new BBox({
         {name:'Dyshoric', color:'green', strokeWidth: 1},
         {name:'CAA', color:'magenta', strokeWidth: 1},
     ],
-    annotationName: ANNOTATION_NAME,
+    annotationType: ANNOTATION_TYPE,
     annotationDescription: ANNOTATION_DESCRIPTION
 });
 
@@ -54,16 +56,11 @@ viewer.addHandler('open', ()=>{
     // TODO: reset the bbox app?
     console.log('Do we need to do something to reset the app? Or is it automatic?');
     dsaUI.getAnnotations(viewer.world.getItemAt(0).source.item._id).then(d=>{
-        const existingAnnotations = d.filter(a => a.annotation?.description === ANNOTATION_DESCRIPTION);
-        if(existingAnnotations.length === 0){
-            // set up new segmentation
-            // setupFeatureCollection();
-        } else {
-            const promises = existingAnnotations.map(x => dsaUI.loadAnnotationAsGeoJSON(x._id));
-            Promise.all(promises).then(annotations => {
-                bboxApp.addFeatureCollections(annotations.flat());
-            });
-        }
+        const existingAnnotations = d.filter(a => a.annotation.attributes?.type === ANNOTATION_TYPE);
+        const promises = existingAnnotations.map(x => dsaUI.loadAnnotationAsGeoJSON(x._id));
+        Promise.all(promises).then(annotations => {
+            bboxApp.addFeatureCollections(annotations.flat());
+        });
     });
 })
 
@@ -71,7 +68,7 @@ viewer.addHandler('open', ()=>{
 bboxApp.enableSaveButton(()=>{
     // console.log('GeoJSON:', geoJSON);
     const itemID = viewer.world.getItemAt(0).source.item._id;
-    const geoJSON = bboxApp.getDSACompatibleGeoJSON();
+    const geoJSON = bboxApp.getGeoJSON();
     dsaUI.saveAnnotationInDSAFormat(itemID, geoJSON).then(d=>{
         window.alert('Save was successful')
     }).catch(e=>{

@@ -18,7 +18,8 @@ export class DSAAdapter{
             Object.keys(groups).forEach(label=>{
                 let elements = groups[label];
                 let description = dsa.annotation.description;
-                featureCollections.push(elementArrayToFeatureCollection(dsa._id, label, elements, description, elements.group));
+                let attributes = dsa.annotation.attributes;
+                featureCollections.push(elementArrayToFeatureCollection(dsa._id, label, elements, description, elements.group, attributes));
             })
         }
     
@@ -264,7 +265,7 @@ function getColorString(color, useParentFillOpacity){
     return string;
 }
 
-function elementArrayToFeatureCollection(annotationId, label, elements, description, groupName){
+function elementArrayToFeatureCollection(annotationId, label, elements, description, groupName, attributes){
     
     let grouped = elements.reduce((acc, f)=>{
         let feature = elementToFeature(f);
@@ -310,7 +311,8 @@ function elementArrayToFeatureCollection(annotationId, label, elements, descript
                 dsa:{
                     annotationId: annotationId,
                     group: groupName,
-                    description: description
+                    description: description,
+                    attributes: attributes
                 }
             },
         }

@@ -226,7 +226,8 @@ export class DSAUserInterface extends OpenSeadragon.EventSource{
         const data = {
             name: geoJSON.properties.userdata?.dsa?.name || geoJSON.label,
             description: geoJSON.properties.userdata?.dsa?.description || 'Created by DSAUserInterface.mjs adapter',
-            elements: this.adapter.featureCollectionToElements(geoJSON)
+            elements: this.adapter.featureCollectionToElements(geoJSON),
+            attributes: geoJSON.properties.userdata?.dsa?.attributes
         }
 
         let promise;

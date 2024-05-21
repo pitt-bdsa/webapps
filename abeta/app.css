@@ -82,6 +82,31 @@ button.active {
     margin-left:2em;
 }
 
+/* adapted from https://mionskowski.pl/posts/positioning-a-context-menu-using-pure-css/ */
+.contextmenu {
+    --mouse-x: 0;
+    --mouse-y: 0;
+    display: none;
+    position: fixed;
+    margin: 0;
+    left: 0;
+    top: 0;
+    transform: translateX(min(var(--mouse-x), calc(100vw - 100%))) translateY(min(var(--mouse-y), calc(100vh - 100%)));
+
+    padding:5px;
+    background-color:white;
+    border:thin black solid;
+    border-radius:5px;
+}
+.contextmenu-close{
+    position:absolute;
+    top:5px;
+    right:5px;
+}
+.contextmenu h4{
+    margin-top:1em;
+    margin-bottom:0.1em;
+}
 
 input.dsa-link{
     width:100%;
