@@ -635,8 +635,10 @@ function headerHtml(){
     return `
     <div class="dsa-header dsaui">
         <input type="text" placeholder="Paste link to a DSA instance" class="dsa-link"><button class="dsa-go">Open DSA</button>
-        <span class="item-navigation"> 
-            Now annotating: <span class="current-item"></span>
+        <span class="item-navigation">
+            <span class="item-navigation-text">
+                Now annotating: <span class="current-item"></span>
+            </span> 
             <button class="item previous" disabled><</button>
             <button class='item next' disabled>></button>
         </span>

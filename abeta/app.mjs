@@ -24,12 +24,12 @@ let viewer = window.viewer = OpenSeadragon({
     crossOriginPolicy: 'Anonymous',
     ajaxWithCredentials: false,
     showNavigator:true,
-    drawer:'webgl',
+    // sequenceMode:true,
     // immediateRender: true,
 });
 
 // DSA setup
-let dsaUI = new DSAUserInterface(viewer);
+let dsaUI = new DSAUserInterface(viewer, {hash:"no-nav", openFolder:false});
 dsaUI.header.appendTo('.dsa-ui-container');
 
 // add rotation control
