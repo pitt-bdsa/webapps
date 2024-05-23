@@ -10,7 +10,8 @@ export class BBox extends OpenSeadragon.EventSource{
      * @param {Boolean} options.editROIs Whether ROI editing is allowed
      * @param {String} options.annotationType The type of the overall annotation
      * @param {String} options.annotationDescription The description of the overall annotation
-     * @param {Boolean} options.animateNavigation Whether to animate transitions in panning between bounding boxes in review mode. Default = false. 
+     * @param {Boolean} options.animateNavigation Whether to animate transitions in panning between bounding boxes in review mode. Default = false.
+     * @param {Boolean} options.alignBBoxesToROI Whether to align bounding boxes to their ROI (true) or to the native WSI orientation (false); Default = false; 
      */
     constructor(options){
         super();
@@ -87,6 +88,7 @@ export class BBox extends OpenSeadragon.EventSource{
             annotationType: 'Bounding Box ROI',
             annotationDescription: 'Created by the Bounding Box tool',
             animationNavigation: false,
+            alignBBoxesToROI:false,
         }
     }
     
@@ -148,6 +150,7 @@ export class BBox extends OpenSeadragon.EventSource{
         bboxTool.placeholder.paperItem.on('item-replaced',ev=>{
             console.log('placeholder replaced by', ev);
             ev.item.data.userdata = Object.assign({}, bboxTool.placeholder.paperItem.data.userdata); // save a copy, not a reference
+            ev.item.displayName = ev.item.data.userdata?.class;
         });
         bboxTool.onMouseUp = function(event){
             if(this.item){
@@ -192,11 +195,9 @@ export class BBox extends OpenSeadragon.EventSource{
                 // iterate over currently selected items and set the style and class data
                 for(const item of this.items){
                     item.style = target.style;
-                    // item.style.fillColor = 'white';
-                    // item.style.fillOpacity = 0.001;
-                    // item.updateFillOpacity();
                     item.selectedColor = item.strokeColor;
                     item.data.userdata.class = target.class;
+                    item.displayName = target.class;
                 }
                 // if(this.items.length === 1 && activateRectTool){
                 //     tk.activateTool('rectangle')
@@ -432,6 +433,12 @@ export class BBox extends OpenSeadragon.EventSource{
 
         content.addEventListener('activated', ()=> {
             this.tk.paperScope.project.getSelectedItems().forEach(item=>item.deselect());
+            if(this.options.alignBBoxesToROI){
+                const rectangle = this._activeROI.children.ROI;
+                this._alignToRectangle(rectangle);
+            } else {
+                this.viewer.viewport.rotateTo(0, null, true);
+            }
         });
 
         // button.addEventListener('click', ()=> this.components.roiDropdown.disabled = true );
@@ -799,10 +806,13 @@ export class BBox extends OpenSeadragon.EventSource{
         
         const dropdown = this.components._contextDropdown;
 
-        let currentItem;
+        let currentItem, isBBoxToolActive, currentBBoxToolClass;
 
         const _handleContextMenu = (event)=>{
             event.preventDefault();
+            if(!this._activeROI){
+                return;
+            }
             const rect = event.target.getBoundingClientRect();
             const x = event.clientX - rect.left; //x position within the element.
             const y = event.clientY - rect.top;  //y position within the element.
@@ -811,7 +821,14 @@ export class BBox extends OpenSeadragon.EventSource{
             const hitResult = this._activeROI.hitTest(imagePoint,{match:hitResult=>hitResult.item.data.userdata?.role === 'bounding-box', fill: true, stroke: true});
             
             if(hitResult){
+
+                isBBoxToolActive = this._bboxTool.isActive();
+                currentBBoxToolClass = this._bboxTool._currentTarget;
+                this.tk.activateTool('default');
+
                 currentItem = hitResult.item;
+                currentItem.select();
+
                 menu.style.setProperty('--mouse-x', event.clientX + 'px');
                 menu.style.setProperty('--mouse-y', event.clientY + 'px');
                 menu.style.display = 'block';
@@ -822,6 +839,10 @@ export class BBox extends OpenSeadragon.EventSource{
         }
         const _closeContextMenu = () => {
             menu.style.display = 'none';
+            currentItem.deselect();
+            if(isBBoxToolActive){
+                this._bboxTool.activate(currentBBoxToolClass);
+            }
         }
 
         this.components._contextEdit.addEventListener('click', ()=>{
@@ -839,15 +860,12 @@ export class BBox extends OpenSeadragon.EventSource{
         this.components._contextDropdown.addEventListener('change', ()=>{
             if(currentItem){
                 const classDef = this._activeROI.data[this.components._contextDropdown.value];
-                const isBBoxToolActive = this._bboxTool.isActive();
-                const currentBBoxToolClass = this._bboxTool._currentTarget;
+                
                 currentItem.select();
                 this._bboxTool.activate(classDef); // will set the class of each item and then activates the rect tool if needed
                 this._bboxTool.deactivate();
                 currentItem.deselect();
-                if(isBBoxToolActive){
-                    this._bboxTool.activate(currentBBoxToolClass);
-                }
+                
             }
         });
         closeButton.addEventListener('click', _closeContextMenu);
@@ -942,6 +960,7 @@ export class BBox extends OpenSeadragon.EventSource{
                 }
             });
             this._activeROI.opacity = 1;
+
             const rectangle = this._activeROI.children.ROI;
             this._alignToRectangle(rectangle);
 
@@ -969,7 +988,10 @@ export class BBox extends OpenSeadragon.EventSource{
         try{
             const path = rect.children[0];
             const angle = path.segments[1].point.subtract(path.segments[0].point).angle;
-            this.viewer.viewport.rotateTo(-angle, null, true);
+            if(this.options.alignBBoxesToROI){
+                this.viewer.viewport.rotateTo(-angle, null, true);
+            }
+            
             const width = path.segments[0].point.subtract(path.segments[1].point).length;
             const height = path.segments[0].point.subtract(path.segments[3].point).length;
             const x = rect.bounds.center.x - width/2;

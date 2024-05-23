@@ -24,6 +24,7 @@ let viewer = window.viewer = OpenSeadragon({
     crossOriginPolicy: 'Anonymous',
     ajaxWithCredentials: false,
     showNavigator:true,
+    // drawer:'canvas'
     // sequenceMode:true,
     // immediateRender: true,
 });

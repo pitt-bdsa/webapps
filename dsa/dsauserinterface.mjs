@@ -162,7 +162,7 @@ export class DSAUserInterface extends OpenSeadragon.EventSource{
             baseurl = 'https://'+baseurl;
         }
         this.dsaLinkInput.val(baseurl); //update the input to match what we have
-        if(baseurl !== $('#dsa-dialog').data('baseurl')){
+        if(baseurl !== this.dialog.data('baseurl')){
             this._setupDSA(baseurl);
             this.dialog.data('baseurl',baseurl);
             this.raiseEvent('set-dsa-instance',{url: baseurl});
