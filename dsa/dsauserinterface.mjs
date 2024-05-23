@@ -186,6 +186,10 @@ export class DSAUserInterface extends OpenSeadragon.EventSource{
                 this.annotationEditorGUI.show();
                 this.annotationEditorGUI.attr('data-mode','picker');
                 this._setupItemNavigation(ts.name, element);
+                this.dialog.find('.open-in-viewer').removeClass('open-in-viewer');
+                if(element){
+                    $(element).addClass('open-in-viewer');
+                }
             });
         });
         
@@ -216,6 +220,33 @@ export class DSAUserInterface extends OpenSeadragon.EventSource{
         return this.API.get(`annotation/${annotationId}`, {noCache: true}).then(d=>this.adapter.annotationToFeatureCollections(d));
     }
 
+    // Adds the newly saved ID back onto the item in the annotation toolkit so saving it again won't cause a duplicate copy
+    saveAnnotationToolkitToDSA(itemId, annotationToolkit, saveGeoJSON){
+        const geoJSON = annotationToolkit.toGeoJSON();
+        const fcGroups = annotationToolkit.getFeatureCollectionGroups();
+        return this.saveAnnotationInDSAFormat(itemId, geoJSON, saveGeoJSON).then(dsaResponseArray=>{
+            for(const i in dsaResponseArray){
+                if(!fcGroups[i].data.userdata){
+                    fcGroups[i].data.userdata = {}
+                }
+                
+                fcGroups[i].data.userdata.dsa = {
+                    attributes: dsaResponseArray[i].annotation.attributes,
+                    description: dsaResponseArray[i].annotation.description,
+                    name: dsaResponseArray[i].annotation.name,
+                    annotationId: dsaResponseArray[i]._id
+                }
+            }
+        })
+    }
+
+    /**
+     * Note: Does not add the newly saved ID back onto the item within the annotation toolkit.
+     * @param {String} itemID The ID of the item in the DSA
+     * @param {Object} geoJSON The GeoJSON object from an annotation toolkit
+     * @param {Boolean} saveGeoJSONFile Whether to save the annotation as a json file within the item
+     * @returns 
+     */
     saveAnnotationInDSAFormat(itemID, geoJSON, saveGeoJSONFile){
         if(Array.isArray(geoJSON)){
             const promises = geoJSON.map(item => this.saveAnnotationInDSAFormat(itemID, item, saveGeoJSONFile));
@@ -272,10 +303,6 @@ export class DSAUserInterface extends OpenSeadragon.EventSource{
         } else {
             return promise;
         }
-        
-        
-        
-       
     }
 
     // private

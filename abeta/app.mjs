@@ -69,9 +69,8 @@ viewer.addHandler('open', ()=>{
 bboxApp.enableSaveButton(()=>{
     // console.log('GeoJSON:', geoJSON);
     const itemID = viewer.world.getItemAt(0).source.item._id;
-    const geoJSON = bboxApp.getGeoJSON();
-    dsaUI.saveAnnotationInDSAFormat(itemID, geoJSON).then(d=>{
-        window.alert('Save was successful')
+    return dsaUI.saveAnnotationToolkitToDSA(itemID, viewer.annotationToolkit).then(()=>{
+        window.alert('Save was successful');
     }).catch(e=>{
         console.error(e);
         window.alert('Error! There was a problem saving the annotation. Do you need to log in to the DSA? See console for details.');

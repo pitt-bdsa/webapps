@@ -154,6 +154,9 @@ input.dsa-link{
 .folder:not(.expanded)>.folder-header>.fa-folder-open{
     display:none;
 }
+.open-in-viewer{
+    background-color:lightgoldenrodyellow;
+}
 
 .gui-component{
     border-bottom:thin black solid;
