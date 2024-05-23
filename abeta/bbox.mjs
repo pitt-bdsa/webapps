@@ -77,6 +77,8 @@ export class BBox extends OpenSeadragon.EventSource{
         
 
         this._ROIMap = {};
+
+        this._ROIsToDelete = [];
     }
 
     get defaultOptions(){
@@ -100,8 +102,15 @@ export class BBox extends OpenSeadragon.EventSource{
         this.components.saveButton.disabled = false;
         this.components.saveButton.addEventListener('click',()=>{
             const geoJSON = this.tk.toGeoJSON();
-            callback(geoJSON);
+            callback(geoJSON, this._ROIsToDelete);
         });
+    }
+
+    /**
+     * 
+     */
+    clearROIsToDelete(){
+        this._ROIsToDelete = [];
     }
 
     /**
@@ -302,11 +311,16 @@ export class BBox extends OpenSeadragon.EventSource{
         const removeROI = ()=>{
             // delete the currently active group
             const group = this._ROIMap[this.components.roiDropdown.value];
-            group?.remove();
-            group?.data.option.remove();
-            // set the dropdown to the default option
-            this.components.roiDropdown.value = '';
-            this.components.roiDropdown.dispatchEvent(new Event('change'));
+            if(group){
+                group.remove();
+                group.data.option.remove();
+                // set the dropdown to the default option
+                this.components.roiDropdown.value = '';
+                this.components.roiDropdown.dispatchEvent(new Event('change'));
+                
+                this._ROIsToDelete.push(group)
+            }
+           
         }
 
         

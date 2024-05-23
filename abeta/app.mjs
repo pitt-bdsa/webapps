@@ -66,14 +66,18 @@ viewer.addHandler('open', ()=>{
 })
 
 
-bboxApp.enableSaveButton(()=>{
+bboxApp.enableSaveButton((geoJSON, toDelete)=>{
     // console.log('GeoJSON:', geoJSON);
     const itemID = viewer.world.getItemAt(0).source.item._id;
-    return dsaUI.saveAnnotationToolkitToDSA(itemID, viewer.annotationToolkit).then(()=>{
+    const idsToDelete = toDelete.map(item=>item.data.userdata?.dsa?.annotationId).filter(x=>x);
+    const promises = idsToDelete.map(id=>dsaUI.deleteAnnotation(id));
+    promises.push(dsaUI.saveAnnotationToolkitToDSA(itemID, viewer.annotationToolkit));
+    bboxApp.clearROIsToDelete();
+    return Promise.all(promises).then(()=>{
         window.alert('Save was successful');
     }).catch(e=>{
         console.error(e);
-        window.alert('Error! There was a problem saving the annotation. Do you need to log in to the DSA? See console for details.');
+        window.alert('Error! There was a problem saving the annotation(s). Do you need to log in to the DSA? See console for details.');
     });
 })
 

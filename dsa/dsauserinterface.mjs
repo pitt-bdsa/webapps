@@ -215,6 +215,10 @@ export class DSAUserInterface extends OpenSeadragon.EventSource{
     getAnnotations(itemID){
         return this.API.get('annotation',{params:{itemId:itemID}, noCache: true});
     }
+    
+    deleteAnnotation(id){
+        return this.API.delete(`annotation/${id}`);
+    }
 
     loadAnnotationAsGeoJSON(annotationId){
         return this.API.get(`annotation/${annotationId}`, {noCache: true}).then(d=>this.adapter.annotationToFeatureCollections(d));
