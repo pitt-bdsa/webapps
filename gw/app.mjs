@@ -184,6 +184,12 @@ finishLeptomeninges.addEventListener('click',function(){
 // Set up the "Finish Exclude" button
 finishExclude.addEventListener('click',function(){
     this.classList.add('complete');
+    makeNonOverlapping('Exclude', true);
+    testComplete();
+});
+
+// Set up the "Submit" button
+submitButton.addEventListener('click', function(){
     // make Exclude a polygon type if the user hasn't drawn anything
     if(annotations['Exclude'].area === 0){
         const geometry = {
@@ -195,13 +201,6 @@ finishExclude.addEventListener('click',function(){
         annotations['Exclude'] = newItem;
     }
     
-
-    makeNonOverlapping('Exclude', true);
-    testComplete();
-});
-
-// Set up the "Submit" button
-submitButton.addEventListener('click', function(){
     submitButton.classList.add('pending');
     submitButton.disabled = true;
     const itemID = viewer.world.getItemAt(0).source.item._id;
