@@ -3,6 +3,17 @@ import { RotationControlOverlay } from 'https://cdn.jsdelivr.net/gh/pearcetm/osd
 import { AnnotationToolkit } from 'https://cdn.jsdelivr.net/gh/pearcetm/osd-paperjs-annotation@0.4.6/src/js/annotationtoolkit.mjs';
 import { DSAUserInterface } from '../dsa/dsauserinterface.mjs';
 
+/**
+ * @param {OpenSeadragon.Viewer} viewer The viewer to attach this UI to. If the viewer already has an annotation toolkit attached, use it, otherwise one will be created.
+ */
+export class SegmentationUI{
+    constructor(viewer){
+        this.viewer = viewer;
+        this.tk = viewer.annotationToolkit || new AnnotationToolkit(viewer);
+    }
+}
+
+
 // Global DSA linking variables
 const ANNOTATION_NAME = 'Gray White Segmentation';
 const ANNOTATION_DESCRIPTION = 'Created by the Gray-White Segmentation Web App';
@@ -185,7 +196,7 @@ finishLeptomeninges.addEventListener('click',function(){
 finishExclude.addEventListener('click',function(){
     this.classList.add('complete');
     // make Exclude a polygon type if the user hasn't drawn anything
-    if(annotations['Exclude'].area === 0){
+    if(annotations['Exclude']){
         const geometry = {
             type: 'Polygon',
             coordinates: [[[-1, -1], [-1, 0], [0, 0], [0, -1]]],
@@ -307,9 +318,6 @@ function makeNonOverlapping(name, overwriteOthers){
         let thisAnnotation = annotations[name];
         for(const key of keys){
             const other = annotations[key];
-            if(other.area === 0){
-                continue;
-            }
             const newOther = other.subtract(thisAnnotation, false).toCompoundPath();
             other.removeChildren();
             for(const child of newOther.children){
