@@ -132,6 +132,7 @@ startLeptomeninges.addEventListener('click',function(){
     startWhite.classList.remove('active');
     startExclude.classList.remove('active');
     featureCollection.selected = false;
+    finishLeptomeninges.disabled = false; // enable the finish button now rather than checking the area since it can be empty
     if(isActive){
         annotations['Leptomeninges'].select();
     } else {
@@ -200,7 +201,17 @@ submitButton.addEventListener('click', function(){
         annotations['Exclude'].replaceWith(newItem);
         annotations['Exclude'] = newItem;
     }
-    
+
+    if(annotations['Leptomeninges'].area === 0){
+        const geometry = {
+            type: 'Polygon',
+            coordinates: [[[-2, -1], [-2, 0], [-1, 0], [-1, -1]]],
+        }
+        const newItem = tk.paperScope.Item.fromGeoJSON(geometry);
+        annotations['Leptomeninges'].replaceWith(newItem);
+        annotations['Leptomeninges'] = newItem;
+    }
+
     submitButton.classList.add('pending');
     submitButton.disabled = true;
     const itemID = viewer.world.getItemAt(0).source.item._id;
@@ -219,7 +230,8 @@ submitButton.addEventListener('click', function(){
 function testAreas(){
     annotations['Gray Matter'] && (finishGray.disabled = annotations['Gray Matter'].area === 0);
     annotations['White Matter'] && (finishWhite.disabled = annotations['White Matter'].area === 0);
-    annotations['Leptomeninges'] && (finishLeptomeninges.disabled = annotations['Leptomeninges'].area === 0);
+    annotations['Leptomeninges'] && (finishLeptomeninges.disabled = (annotations['Leptomeninges'].area === 0 && finishLeptomeninges.disabled));
+    annotations['Exclude'] && (finishExclude.disabled = (annotations['Exclude'].area === 0 && finishExclude.disabled));
 }
 
 function testComplete(){
@@ -304,30 +316,34 @@ function makeNonOverlapping(name, overwriteOthers){
     if(overwriteOthers){
         const keys = Object.keys(annotations).filter(key => key !== name);
         let thisAnnotation = annotations[name];
-        for(const key of keys){
-            const other = annotations[key];
-            if(other.area === 0){
-                continue;
+        if(thisAnnotation.area > 0){
+            for(const key of keys){
+                const other = annotations[key];
+                if(other.area === 0){
+                    continue;
+                }
+                const newOther = other.subtract(thisAnnotation, false).toCompoundPath();
+                other.removeChildren();
+                for(const child of newOther.children){
+                    other.addChild(child.clone());
+                }
+                newOther.remove();
             }
-            const newOther = other.subtract(thisAnnotation, false).toCompoundPath();
-            other.removeChildren();
-            for(const child of newOther.children){
-                other.addChild(child.clone());
-            }
-            newOther.remove();
         }
     } else {
         const keys = Object.keys(annotations).filter(key => key !== name);
         let thisAnnotation = annotations[name];
-        for(const key of keys){
-            const other = annotations[key];
-            const newAnnotation = thisAnnotation.subtract(other, false).toCompoundPath();
-            thisAnnotation.removeChildren();
-            // thisAnnotation.addChildren(newAnnotation.children);
-            for(const child of newAnnotation.children){
-                thisAnnotation.addChild(child.clone());
+        if(thisAnnotation.area > 0){
+            for(const key of keys){
+                const other = annotations[key];
+                const newAnnotation = thisAnnotation.subtract(other, false).toCompoundPath();
+                thisAnnotation.removeChildren();
+                // thisAnnotation.addChildren(newAnnotation.children);
+                for(const child of newAnnotation.children){
+                    thisAnnotation.addChild(child.clone());
+                }
+                newAnnotation.remove();
             }
-            newAnnotation.remove();
         }
     }
 }
