@@ -592,21 +592,11 @@ export class BBox extends OpenSeadragon.EventSource{
         deleteBBoxButton.innerText = 'Delete';
         deleteBBoxButton.disabled = true;
 
-        content.addEventListener('activated', ()=> {
-            this.tk.activateTool('default');
-            pickBBoxButton.classList.remove('active');
-            editBBoxButton.classList.remove('active');
-            refreshReviewControls();
-            refreshAssignControls();
-        });
-        content.addEventListener('deactivated', ()=> {
-            this.tk.paperScope.project.getSelectedItems().forEach(item=>item.deselect());
-        });
-        
-
 
         let nextItem, prevItem;
         const refreshReviewControls = (keepNextAndPrev)=>{
+            let currentClass = reviewDropdown.value;
+
             // update the dropdown options
             {
                 const options = reviewDropdown.querySelectorAll('option');
@@ -616,13 +606,18 @@ export class BBox extends OpenSeadragon.EventSource{
                         const items = tk.paperScope.project.getItems({match: item=>item.data.userdata?.class === optionClass && item.parent===this._activeROI });
                         option.innerText = `${optionClass} (${items.length})`
                         option.disabled = items.length===0;
+                        if(currentClass === optionClass && items.length === 0){
+                            // reset the selector to "select a class"
+                            reviewDropdown.value = '';
+                            currentClass = '';
+                        }
                     }
                     
                 }
-                const currentClass = reviewDropdown.value;
+                
             }
             //
-            const currentClass = reviewDropdown.value;
+            
             const allItemsOfThisClass = tk.paperScope.project.getItems({match: item=>item.data.userdata?.class === currentClass && item.parent===this._activeROI });
             const selectedItems = tk.paperScope.project.getSelectedItems();
 
@@ -707,6 +702,18 @@ export class BBox extends OpenSeadragon.EventSource{
                 prevClassToAssign = classNames[classNames.length - 1];
             }
         }
+
+        content.addEventListener('activated', ()=> {
+            this.tk.activateTool('default');
+            pickBBoxButton.classList.remove('active');
+            editBBoxButton.classList.remove('active');
+            refreshReviewControls();
+            refreshAssignControls();
+        });
+        content.addEventListener('deactivated', ()=> {
+            this.tk.paperScope.project.getSelectedItems().forEach(item=>item.deselect());
+        });
+        
 
 
         // Next and Prev buttons
