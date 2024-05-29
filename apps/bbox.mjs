@@ -596,6 +596,8 @@ export class BBox extends OpenSeadragon.EventSource{
             this.tk.activateTool('default');
             pickBBoxButton.classList.remove('active');
             editBBoxButton.classList.remove('active');
+            refreshReviewControls();
+            refreshAssignControls();
         });
         content.addEventListener('deactivated', ()=> {
             this.tk.paperScope.project.getSelectedItems().forEach(item=>item.deselect());
@@ -605,6 +607,21 @@ export class BBox extends OpenSeadragon.EventSource{
 
         let nextItem, prevItem;
         const refreshReviewControls = (keepNextAndPrev)=>{
+            // update the dropdown options
+            {
+                const options = reviewDropdown.querySelectorAll('option');
+                for(const option of options){
+                    const optionClass = option.value;
+                    if(optionClass.length > 0){
+                        const items = tk.paperScope.project.getItems({match: item=>item.data.userdata?.class === optionClass && item.parent===this._activeROI });
+                        option.innerText = `${optionClass} (${items.length})`
+                        option.disabled = items.length===0;
+                    }
+                    
+                }
+                const currentClass = reviewDropdown.value;
+            }
+            //
             const currentClass = reviewDropdown.value;
             const allItemsOfThisClass = tk.paperScope.project.getItems({match: item=>item.data.userdata?.class === currentClass && item.parent===this._activeROI });
             const selectedItems = tk.paperScope.project.getSelectedItems();

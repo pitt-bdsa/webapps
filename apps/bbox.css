@@ -1,0 +1,86 @@
+
+button.active {
+    background-color: lightblue;
+}
+
+.selectable-action:not(.visible){
+    display:none;
+}
+
+.header-group{
+    display:inline-block;
+}
+
+.header-group:not(:first-child){
+    border-left:thin black solid;
+    margin-left:0.5em;
+    padding-left:0.5em;
+}
+
+.annotation-actions{
+    display:inline-grid;
+    grid-template-columns:auto 1fr;
+}
+
+.annotation-actions.no-roi div.requires-roi{
+    display:none;
+}
+
+.control-group{
+    margin:0 0.5em;
+    padding:0 0.5em;
+    border-left:thin gray solid;
+    border-right:thin gray solid;
+}
+
+.item-list{
+    padding:0 0.5em;
+}
+
+.bbox-dropdown{
+    margin-right:0.5em;
+}
+
+.done-span{
+    display:inline-flex;
+    align-items:center;
+    margin: 0 0.3em;
+}
+
+.delete-button{
+    background-color:palevioletred;
+    margin-left:2em;
+}
+
+
+
+/* adapted from https://mionskowski.pl/posts/positioning-a-context-menu-using-pure-css/ */
+.context-dialog {
+    --mouse-x: 0;
+    --mouse-y: 0;
+    display: none;
+    position: fixed;
+    margin: 0;
+    left: 0;
+    top: 0;
+    transform: translateX(min(var(--mouse-x), calc(100vw - 100%))) translateY(min(var(--mouse-y), calc(100vh - 100%)));
+
+    background-color:white;
+    border:thin black solid;
+    border-radius:5px;
+    user-select:none;
+}
+.contextmenu{
+    padding:5px 2em;
+}
+.contextmenu h4{
+    margin-top:1em;
+    margin-bottom:0.1em;
+}
+.context-dialog .draggable-header{
+    padding:0.1em 0.5em;
+    background-color:lightgray;
+    cursor:move;
+    display:grid;
+    grid-template-columns:1fr auto;
+}
