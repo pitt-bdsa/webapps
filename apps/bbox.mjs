@@ -7,6 +7,7 @@ export class BBox extends OpenSeadragon.EventSource{
      * @param {Object} options 
      * @param {String} options.container The selector to use for creating the UI
      * @param {Array} options.classes Array of objects with fields name (string), color (string or paper.Color), and strokeWidth (default: 1)
+     * @param {Object} options.hotkeys Hotkey definitions. reviewNext, reviewPrevious, classifyNext and classifyPrevious all take the desired key as the value. classes is boolean; if true, use the key definition within the options.classes objects
      * @param {Boolean} options.editROIs Whether ROI editing is allowed
      * @param {String} options.annotationType The type of the overall annotation
      * @param {String} options.annotationDescription The description of the overall annotation
@@ -73,7 +74,8 @@ export class BBox extends OpenSeadragon.EventSource{
         this._createRoiEditor();
         this._createBboxEditor();
         this._createBboxReviewer();
-        this.setupContextMenu();
+        this._setupContextMenu();
+        this._setupHotkeys();
         
 
         this._ROIMap = {};
@@ -87,6 +89,7 @@ export class BBox extends OpenSeadragon.EventSource{
             viewer: null,
             container: null,
             classes:[],
+            hotkeys:{},
             editROIs:true,
             annotationType: 'Bounding Box ROI',
             annotationDescription: 'Created by the Bounding Box tool',
@@ -480,15 +483,17 @@ export class BBox extends OpenSeadragon.EventSource{
         const div = content;
         this.components.bboxEditor = div;
         this.components.classButtons = [];
-        for(const classDef of this.options.classes){
-            const className = classDef.name;
-            const button = this._createComponent('button', div, null, ['bbox-type', 'requires-roi']);
-            button.dataset.type = className;
-            button.innerText = className;
-            button.addEventListener('click', ()=>{
+
+        const buttonClickHandler = event=>{
+                event.preventDefault();
+                event.stopPropagation();
+                this.components.classButtons.filter(b=>b!==event.target).forEach(b=>b.classList.remove('active'));
+
+                const button = event.target;
+
                 const isActive = button.classList.toggle('active');
                 if(isActive){
-                    const editing = this._bboxTool.activate(this._activeROI.data[className]);
+                    const editing = this._bboxTool.activate(this._activeROI.data[button.dataset.type]);
                     if(editing){
                         button.classList.remove('active');
                     }
@@ -497,16 +502,17 @@ export class BBox extends OpenSeadragon.EventSource{
                     this._bboxTool.deactivate();
                     this.tk.activateTool('default');
                 }
-            });
+        }
+
+        for(const classDef of this.options.classes){
+            const className = classDef.name;
+            const button = this._createComponent('button', div, null, ['bbox-type', 'requires-roi']);
+            button.dataset.type = className;
+            button.innerText = className;
+            button.addEventListener('click', buttonClickHandler);
             this.components.classButtons.push(button);
         }
-        div.addEventListener('click', event=>{
-            if(event.target.matches('.requires-roi')){
-                event.preventDefault();
-                event.stopPropagation();
-                this.components.classButtons.filter(b=>b!==event.target).forEach(b=>b.classList.remove('active'))
-            }
-        })
+        
 
         this._activateBBoxEditor = (classToActivate) => {
             select.value = option.value;
@@ -544,6 +550,9 @@ export class BBox extends OpenSeadragon.EventSource{
         const prev = this._createComponent('button', reviewControls);
         const display = this._createComponent('span',reviewControls, null, 'item-list');
         const next = this._createComponent('button',reviewControls);
+
+        this.components.reviewNextItem = next;
+        this.components.reviewPreviousItem = prev;
         
         prev.innerText = '<';
         next.innerText = '>';
@@ -587,6 +596,9 @@ export class BBox extends OpenSeadragon.EventSource{
         nextClass.innerText = '>';
         prevClass.disabled = true;
         nextClass.disabled = true;
+
+        this.components.assignNextClass = nextClass;
+        this.components.assignPreviousClass = prevClass;
 
         const deleteBBoxButton = this.components.pickBBoxButton = this._createComponent('button', content, 'deleteBBox',['delete-button']);
         deleteBBoxButton.innerText = 'Delete';
@@ -833,7 +845,7 @@ export class BBox extends OpenSeadragon.EventSource{
 
     }
 
-    setupContextMenu(){
+    _setupContextMenu(){
         // listen to right-click events in order to conditionally pop up a context menu
         this.components._contextmenu = this._createComponent('div', document.querySelector('body'), null, 'context-dialog');
         const dialog = this.components._contextmenu;
@@ -954,6 +966,46 @@ export class BBox extends OpenSeadragon.EventSource{
         closeButton.addEventListener('click', _closeContextMenu);
         
         this.tk.overlay.canvas().addEventListener('contextmenu', event => _handleContextMenu(event));
+    }
+
+    _setupHotkeys(){
+        const keyToButtonMap = {};
+        if(this.options.hotkeys?.classes){
+            for(const def of this.options.classes){
+                if(def.key){
+                    keyToButtonMap[def.key.toLowerCase()] = this.components.classButtons.filter(b=>b.dataset.type === def.name)[0];
+                }
+            }
+        }
+        if(this.options.hotkeys?.reviewNext){
+            keyToButtonMap[this.options.hotkeys.reviewNext.toLowerCase()] = this.components.reviewNextItem;
+        }
+        if(this.options.hotkeys?.reviewPrevious){
+            keyToButtonMap[this.options.hotkeys.reviewPrevious.toLowerCase()] = this.components.reviewPreviousItem;
+        }
+        if(this.options.hotkeys?.classifyNext){
+            keyToButtonMap[this.options.hotkeys.classifyNext.toLowerCase()] = this.components.assignNextClass;
+        }
+        if(this.options.hotkeys?.classifyPrevious){
+            keyToButtonMap[this.options.hotkeys.classifyPrevious.toLowerCase()] = this.components.assignPreviousClass;
+        }
+
+        if(Object.keys(keyToButtonMap).length > 0){
+            document.body.addEventListener('keyup', ev=>{
+                if(['INPUT','TEXTAREA'].includes(ev.target.nodeName)){
+                    return;
+                }
+                const button = keyToButtonMap[ev.key];
+                if(button){
+                    button.dispatchEvent(new Event('click'));
+                    ev.preventDefault();
+                    ev.stopPropagation();
+                }
+            })
+        }
+        Object.entries(keyToButtonMap).forEach(([key,button])=>{
+            button.title = 'Hotkey: '+key;
+        })
     }
     
     _createDropdownOption(label, activateOption){

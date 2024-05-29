@@ -27,6 +27,13 @@ export function makeAbetaApp(editROIs){
         // immediateRender: true,
     });
 
+    // suppress default handlers that openseadragon attaches
+    viewer.addHandler('canvas-key',event=>{
+        if(['q','w','e','r','a','s','d','f'].includes(event.originalEvent.key)){
+            event.preventDefaultAction = true;
+        }
+    });
+
     // DSA setup
     let dsaUI = new DSAUserInterface(viewer, {hash:"no-nav", openFolder:false});
     dsaUI.header.appendTo('.dsa-ui-container');
@@ -41,14 +48,21 @@ export function makeAbetaApp(editROIs){
         viewer:viewer,
         container:'#annotation-controls',
         classes:[
-            {name:'Diffuse', color:'red', strokeWidth: 1},
-            {name:'Cored', color:'blue', strokeWidth: 1},
-            {name:'Dyshoric', color:'green', strokeWidth: 1},
-            {name:'CAA', color:'magenta', strokeWidth: 1},
+            {name:'Diffuse', color:'red', strokeWidth: 1, key:'D'},
+            {name:'Cored', color:'blue', strokeWidth: 1, key:'F'},
+            {name:'Dyshoric', color:'green', strokeWidth: 1, key:'G'},
+            {name:'CAA', color:'magenta', strokeWidth: 1, key:'H'},
         ],
         editROIs: editROIs,
         annotationType: ANNOTATION_TYPE,
-        annotationDescription: ANNOTATION_DESCRIPTION
+        annotationDescription: ANNOTATION_DESCRIPTION,
+        hotkeys:{
+            classes:true,
+            reviewNext:'M',
+            reviewPrevious:'N',
+            classifyNext:'P',
+            classifyPrevious:'O'
+        }
     });
 
 
@@ -78,20 +92,6 @@ export function makeAbetaApp(editROIs){
             console.error(e);
             window.alert('Error! There was a problem saving the annotation(s). Do you need to log in to the DSA? See console for details.');
         });
-    })
-
-
-    function setupKeypressHandlers(){
-        
-
-        // suppress default OSD keydown handling for a subset of keys
-        v1.addHandler('canvas-key',event=>{
-            if(['q','w','e','r','a','s','d','f'].includes(event.originalEvent.key)){
-                event.preventDefaultAction = true;
-            }
-        });
-    }
-
-
+    });
 }
 
