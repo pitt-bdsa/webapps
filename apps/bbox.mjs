@@ -79,6 +79,7 @@ export class BBox extends OpenSeadragon.EventSource{
         this._ROIMap = {};
 
         this._ROIsToDelete = [];
+
     }
 
     get defaultOptions(){
@@ -92,6 +93,18 @@ export class BBox extends OpenSeadragon.EventSource{
             animationNavigation: false,
             alignBBoxesToROI:false,
         }
+    }
+
+    /**
+     * Check whether the app is functional. This requires either `editROIs: true` or one or more ROIs must already exist.
+     * @param {Boolean} alert Display an error message via window.alert if the app is not functional
+     */
+    checkAppStatus(alert){
+        const isFunctional = this.options.editROIs || Object.keys(this._ROIMap).length > 0;
+        if(alert && !isFunctional){
+            window.alert('This image can\'t be annotated: No ROIs are present');
+        }
+        return isFunctional;
     }
     
     /**
@@ -124,7 +137,7 @@ export class BBox extends OpenSeadragon.EventSource{
             const ROIs =  group.children.filter(item=>item.data.userdata?.role === 'ROI');
             const isROI = ROIs.length > 0;
             if(isROI){
-                console.log('feature-collection-added event', group.displayName);
+                
                 const groupUserdata = ROIs[0].data.userdata?.featureCollection;
                 if(groupUserdata){
                     delete ROIs[0].data.userdata.featureCollection;
@@ -157,7 +170,6 @@ export class BBox extends OpenSeadragon.EventSource{
         bboxTool.placeholder.paperItem.data.userdata = {role: 'bounding-box'};
 
         bboxTool.placeholder.paperItem.on('item-replaced',ev=>{
-            console.log('placeholder replaced by', ev);
             ev.item.data.userdata = Object.assign({}, bboxTool.placeholder.paperItem.data.userdata); // save a copy, not a reference
             ev.item.displayName = ev.item.data.userdata?.class;
         });
@@ -165,7 +177,6 @@ export class BBox extends OpenSeadragon.EventSource{
             if(this.item){
                 this.item.selected = false;
                 if(this.item.area === 0){
-                    console.log('Removing zero area item');
                     this.item.remove();
                 }
             }
@@ -272,10 +283,13 @@ export class BBox extends OpenSeadragon.EventSource{
     }
 
     _createRoiEditor(){
+        const {content, select, option} = this._createSelectableAction(this.components.annotationActions, 'Edit ROIs', this.options.editROIs);
+
         if(!this.options.editROIs){
-            return;
+            option.remove();
+            content.remove();
         }
-        const {content, select} = this._createSelectableAction(this.components.annotationActions, 'Edit ROIs', true);
+
         const div = content;
         this.components.roiEditor = div;
 
@@ -440,7 +454,7 @@ export class BBox extends OpenSeadragon.EventSource{
 
     }
     _createBboxEditor(){
-        const {content, select, option} = this._createSelectableAction(this.components.annotationActions, 'Draw bounds');
+        const {content, select, option} = this._createSelectableAction(this.components.annotationActions, 'Draw bounds', !this.options.editROIs);
         option.disabled = true;
         option.classList.add('requires-roi');
         content.classList.add('requires-roi');
@@ -474,7 +488,6 @@ export class BBox extends OpenSeadragon.EventSource{
             button.addEventListener('click', ()=>{
                 const isActive = button.classList.toggle('active');
                 if(isActive){
-                    console.log('Activating tool for', className);
                     const editing = this._bboxTool.activate(this._activeROI.data[className]);
                     if(editing){
                         button.classList.remove('active');
@@ -682,15 +695,12 @@ export class BBox extends OpenSeadragon.EventSource{
         // Next and Prev buttons
         next.addEventListener('click',()=>{
             if(nextItem){
-                // console.log('Next item', nextItem);
                 nextItem.select();
                 refreshReviewControls();
-
             }
         });
         prev.addEventListener('click',()=>{
             if(prevItem){
-                // console.log('Prev item', prevItem);
                 prevItem.select();
                 refreshReviewControls();
             }
@@ -777,11 +787,9 @@ export class BBox extends OpenSeadragon.EventSource{
         }
 
         this.tk.paperScope.project.on('item-selected',ev=>{
-            // console.log('item selected', ev);
             onSelectionChange();
         });
         this.tk.paperScope.project.on('item-deselected',ev=>{
-            // console.log('item deselected', ev);
             onSelectionChange();
         });
 
@@ -808,8 +816,6 @@ export class BBox extends OpenSeadragon.EventSource{
         // draggableHeader.draggable = true;
         let offsetX, offsetY;
         const onmousemove = event=>{
-            // console.log('mousemove', event.movementX, event.movementY);
-            // console.log('dialog client', dialog.clientX, dialog.clientY);
             const x = parseInt(dialog.style.getPropertyValue('--mouse-x'));
             const y = parseInt(dialog.style.getPropertyValue('--mouse-y'));
             dialog.style.setProperty('--mouse-x', x + event.movementX + 'px');
