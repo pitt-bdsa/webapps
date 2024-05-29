@@ -819,6 +819,11 @@ export class BBox extends OpenSeadragon.EventSource{
             }
         }
 
+        this.element.addEventListener('roi-changed',()=>{
+            refreshReviewControls();
+            refreshAssignControls();
+        });
+
     }
 
     setupContextMenu(){
@@ -1050,6 +1055,8 @@ export class BBox extends OpenSeadragon.EventSource{
             // TODO: enable interaction with the rotation control tool, if set
             // rotationControl.enable();
         }
+        this.tk.paperScope.project.getSelectedItems().forEach(item=>item.deselect());
+        this.element.dispatchEvent(new Event('roi-changed'));
     }
 
     _alignToRectangle(rect){
