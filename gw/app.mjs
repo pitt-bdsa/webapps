@@ -212,6 +212,12 @@ submitButton.addEventListener('click', function(){
         annotations['Leptomeninges'] = newItem;
     }
 
+    Object.values[annotations].forEach(annotation=>{
+        if(annotation.area < 0){
+            annotation.reverse();
+        }
+    });
+
     submitButton.classList.add('pending');
     submitButton.disabled = true;
     const itemID = viewer.world.getItemAt(0).source.item._id;
