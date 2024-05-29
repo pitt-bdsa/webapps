@@ -83,7 +83,7 @@ button.active {
 }
 
 /* adapted from https://mionskowski.pl/posts/positioning-a-context-menu-using-pure-css/ */
-.contextmenu {
+.context-dialog {
     --mouse-x: 0;
     --mouse-y: 0;
     display: none;
@@ -93,21 +93,25 @@ button.active {
     top: 0;
     transform: translateX(min(var(--mouse-x), calc(100vw - 100%))) translateY(min(var(--mouse-y), calc(100vh - 100%)));
 
-    padding:5px 2em;
     background-color:white;
     border:thin black solid;
     border-radius:5px;
+    user-select:none;
 }
-.contextmenu-close{
-    position:absolute;
-    top:5px;
-    right:5px;
+.contextmenu{
+    padding:5px 2em;
 }
 .contextmenu h4{
     margin-top:1em;
     margin-bottom:0.1em;
 }
-
+.context-dialog .draggable-header{
+    padding:0.1em 0.5em;
+    background-color:lightgray;
+    cursor:move;
+    display:grid;
+    grid-template-columns:1fr auto;
+}
 input.dsa-link{
     width:100%;
 }

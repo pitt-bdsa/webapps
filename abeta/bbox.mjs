@@ -495,7 +495,12 @@ export class BBox extends OpenSeadragon.EventSource{
             }
         })
 
-        
+        this._activateBBoxEditor = (classToActivate) => {
+            select.value = option.value;
+            select.dispatchEvent(new Event('change'));
+            this._bboxTool.activate(classToActivate);
+            this.components.classButtons.filter(b=>b.dataset.type===classToActivate.class).forEach(b=>b.classList.add('active')); 
+        }
 
     }
     _createBboxReviewer(){
@@ -793,8 +798,38 @@ export class BBox extends OpenSeadragon.EventSource{
 
     setupContextMenu(){
         // listen to right-click events in order to conditionally pop up a context menu
-        this.components._contextmenu = this._createComponent('div', document.querySelector('body'), null, 'contextmenu');
-        const menu = this.components._contextmenu;
+        this.components._contextmenu = this._createComponent('div', document.querySelector('body'), null, 'context-dialog');
+        const dialog = this.components._contextmenu;
+
+        const draggableHeader = this._createComponent('div', dialog, null, ['draggable-header']);
+        const headerText = this._createComponent('span',draggableHeader);
+        headerText.innerText = 'Edit Box';
+
+        // draggableHeader.draggable = true;
+        let offsetX, offsetY;
+        const onmousemove = event=>{
+            // console.log('mousemove', event.movementX, event.movementY);
+            // console.log('dialog client', dialog.clientX, dialog.clientY);
+            const x = parseInt(dialog.style.getPropertyValue('--mouse-x'));
+            const y = parseInt(dialog.style.getPropertyValue('--mouse-y'));
+            dialog.style.setProperty('--mouse-x', x + event.movementX + 'px');
+            dialog.style.setProperty('--mouse-y', y + event.movementY + 'px');
+        }
+        const finishDrag = ()=>{
+            document.body.removeEventListener('mousemove', onmousemove);
+            document.body.removeEventListener('mouseup', finishDrag );
+        }
+        const startDrag = ()=>{
+            document.body.addEventListener('mousemove', onmousemove);
+            document.body.addEventListener('mouseup', finishDrag );
+        }
+        draggableHeader.addEventListener('mousedown', startDrag );
+        
+        
+        const closeButton = this._createComponent('button', draggableHeader, null, ['contextmenu-close']);
+        closeButton.innerText = 'X';
+
+        const menu = this._createComponent('div', dialog, null, 'contextmenu');
 
         const l1 = this._createComponent('h4',menu);
         l1.innerText='Reclassify';
@@ -806,8 +841,7 @@ export class BBox extends OpenSeadragon.EventSource{
         this.components._contextEdit = this._createComponent('button', menu, null, ['contextmenu-edit-button']);
         this.components._contextDelete = this._createComponent('button', menu, null, ['contextmenu-delete-button', 'delete-button']);
 
-        const closeButton = this._createComponent('button',menu,null,['contextmenu-close']);
-        closeButton.innerText = 'X';
+        
 
         for(const classDef of this.options.classes){
             const option = this._createComponent('option', this.components._contextDropdown);
@@ -843,26 +877,26 @@ export class BBox extends OpenSeadragon.EventSource{
                 currentItem = hitResult.item;
                 currentItem.select();
 
-                menu.style.setProperty('--mouse-x', event.clientX + 'px');
-                menu.style.setProperty('--mouse-y', event.clientY + 'px');
-                menu.style.display = 'block';
+                dialog.style.setProperty('--mouse-x', event.clientX + 'px');
+                dialog.style.setProperty('--mouse-y', event.clientY + 'px');
+                dialog.style.display = 'block';
 
                 const currentClass = currentItem.data.userdata?.class;
                 dropdown.value = currentClass;
             }
         }
         const _closeContextMenu = () => {
-            menu.style.display = 'none';
+            dialog.style.display = 'none';
             currentItem.deselect();
             if(isBBoxToolActive){
-                this._bboxTool.activate(currentBBoxToolClass);
+                this._activateBBoxEditor(currentBBoxToolClass);
             }
         }
 
         this.components._contextEdit.addEventListener('click', ()=>{
             if(currentItem){
                 this._activateBBoxReviewer(currentItem);
-                _closeContextMenu();
+                // _closeContextMenu();
             }
         });
         this.components._contextDelete.addEventListener('click', ()=>{
