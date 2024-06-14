@@ -14,6 +14,10 @@ const startWhite = document.querySelector('#start-white');
 const finishWhite = document.querySelector('#finish-white');
 const startLeptomeninges = document.querySelector('#start-leptomeninges');
 const finishLeptomeninges = document.querySelector('#finish-leptomeninges');
+const startSuperficial = document.querySelector('#start-superficial');
+const finishSuperficial = document.querySelector('#finish-superficial');
+const startOther = document.querySelector('#start-other');
+const finishOther = document.querySelector('#finish-other');
 const startExclude = document.querySelector('#start-exclude');
 const finishExclude = document.querySelector('#finish-exclude');
 const submitButton = document.querySelector('#submit');
@@ -23,9 +27,18 @@ const annotations = {
     'Gray Matter': null,
     'White Matter': null,
     'Leptomeninges': null,
+    'Superficial': null,
+    'Other': null,
     'Exclude': null,
 }
-
+const annotationColors = {
+    'Gray Matter': 'green',
+    'White Matter': 'blue',
+    'Leptomeninges': 'black',
+    'Superficial': 'yellow',
+    'Other': 'magenta',
+    'Exclude': 'red',
+}
 // don't navigate away accidentally
 window.addEventListener('beforeunload',function(){
     return 'Are you sure you want to leave?';
@@ -97,6 +110,8 @@ startGray.addEventListener('click',function(){
     const isActive = this.classList.toggle('active');
     startWhite.classList.remove('active');
     startLeptomeninges.classList.remove('active');
+    startSuperficial.classList.remove('active');
+    startOther.classList.remove('active');
     startExclude.classList.remove('active');
     featureCollection.selected = false;
     if(isActive){
@@ -114,6 +129,8 @@ startWhite.addEventListener('click',function(){
     const isActive = this.classList.toggle('active');
     startGray.classList.remove('active');
     startLeptomeninges.classList.remove('active');
+    startSuperficial.classList.remove('active');
+    startOther.classList.remove('active');
     startExclude.classList.remove('active');
     featureCollection.selected = false;
     if(isActive){
@@ -130,6 +147,8 @@ startLeptomeninges.addEventListener('click',function(){
     const isActive = this.classList.toggle('active');
     startGray.classList.remove('active');
     startWhite.classList.remove('active');
+    startSuperficial.classList.remove('active');
+    startOther.classList.remove('active');
     startExclude.classList.remove('active');
     featureCollection.selected = false;
     finishLeptomeninges.disabled = false; // enable the finish button now rather than checking the area since it can be empty
@@ -142,12 +161,52 @@ startLeptomeninges.addEventListener('click',function(){
     }
 });
 
+// Set up the "Start Superficial" button
+startSuperficial.addEventListener('click',function(){
+    const isActive = this.classList.toggle('active');
+    startGray.classList.remove('active');
+    startWhite.classList.remove('active');
+    startLeptomeninges.classList.remove('active');
+    startOther.classList.remove('active');
+    startExclude.classList.remove('active');
+    featureCollection.selected = false;
+    finishSuperficial.disabled = false; // enable the finish button now rather than checking the area since it can be empty
+    if(isActive){
+        annotations['Superficial'].select();
+    } else {
+        annotations['Superficial'].deselect();
+        tk.activateTool('default');
+        tk._annotationUI._toolbar.setMode();
+    }
+});
+
 // Set up the "Start Leptomeninges" button
+startOther.addEventListener('click',function(){
+    const isActive = this.classList.toggle('active');
+    startGray.classList.remove('active');
+    startWhite.classList.remove('active');
+    startLeptomeninges.classList.remove('active');
+    startSuperficial.classList.remove('active');
+    startExclude.classList.remove('active');
+    featureCollection.selected = false;
+    finishOther.disabled = false; // enable the finish button now rather than checking the area since it can be empty
+    if(isActive){
+        annotations['Other'].select();
+    } else {
+        annotations['Other'].deselect();
+        tk.activateTool('default');
+        tk._annotationUI._toolbar.setMode();
+    }
+});
+
+// Set up the "Start Exclude" button
 startExclude.addEventListener('click',function(){
     const isActive = this.classList.toggle('active');
     startGray.classList.remove('active');
     startWhite.classList.remove('active');
     startLeptomeninges.classList.remove('active');
+    startSuperficial.classList.remove('active');
+    startOther.classList.remove('active');
     featureCollection.selected = false;
 
     finishExclude.disabled = false; // enable the finish button now rather than checking the area since it can be empty
@@ -182,6 +241,20 @@ finishLeptomeninges.addEventListener('click',function(){
     testComplete();
 });
 
+// Set up the "Finish Leptomeninges" button
+finishSuperficial.addEventListener('click',function(){
+    this.classList.add('complete');
+    makeNonOverlapping('Superficial', false);
+    testComplete();
+});
+
+// Set up the "Finish Leptomeninges" button
+finishOther.addEventListener('click',function(){
+    this.classList.add('complete');
+    makeNonOverlapping('Other', false);
+    testComplete();
+});
+
 // Set up the "Finish Exclude" button
 finishExclude.addEventListener('click',function(){
     this.classList.add('complete');
@@ -212,7 +285,27 @@ submitButton.addEventListener('click', function(){
         annotations['Leptomeninges'] = newItem;
     }
 
-    Object.values[annotations].forEach(annotation=>{
+    if(annotations['Superficial'].area === 0){
+        const geometry = {
+            type: 'Polygon',
+            coordinates: [[[-3, -1], [-3, 0], [-2, 0], [-2, -1]]],
+        }
+        const newItem = tk.paperScope.Item.fromGeoJSON(geometry);
+        annotations['Superficial'].replaceWith(newItem);
+        annotations['Superficial'] = newItem;
+    }
+
+    if(annotations['Other'].area === 0){
+        const geometry = {
+            type: 'Polygon',
+            coordinates: [[[-4, -1], [-4, 0], [-3, 0], [-3, -1]]],
+        }
+        const newItem = tk.paperScope.Item.fromGeoJSON(geometry);
+        annotations['Other'].replaceWith(newItem);
+        annotations['Other'] = newItem;
+    }
+
+    Object.values(annotations).forEach(annotation=>{
         if(annotation.area < 0){
             annotation.reverse();
         }
@@ -237,6 +330,8 @@ function testAreas(){
     annotations['Gray Matter'] && (finishGray.disabled = annotations['Gray Matter'].area === 0);
     annotations['White Matter'] && (finishWhite.disabled = annotations['White Matter'].area === 0);
     annotations['Leptomeninges'] && (finishLeptomeninges.disabled = (annotations['Leptomeninges'].area === 0 && finishLeptomeninges.disabled));
+    annotations['Superficial'] && (finishSuperficial.disabled = (annotations['Superficial'].area === 0 && finishSuperficial.disabled));
+    annotations['Other'] && (finishOther.disabled = (annotations['Other'].area === 0 && finishOther.disabled));
     annotations['Exclude'] && (finishExclude.disabled = (annotations['Exclude'].area === 0 && finishExclude.disabled));
 }
 
@@ -271,15 +366,26 @@ function setupFeatureCollection(existing){
             } else {
                 child.remove();
             }
-        })
+        });
+
+        // initialize empty item for any category the annotation is missing
+        for(const name of validNames){
+            const existing = featureCollection.children.filter(c => c.displayName === name)[0];
+            if(!existing){
+                setupMultiPolygon(name, featureCollection);
+            }
+        }
+
     } else {
         featureCollection = tk.addEmptyFeatureCollectionGroup();
         featureCollection.displayName = ANNOTATION_NAME;
         featureCollection.data.userdata = { dsa: { description: ANNOTATION_DESCRIPTION} };
-        setupMultiPolygon('Gray Matter', 'green', featureCollection);
-        setupMultiPolygon('White Matter', 'blue', featureCollection);
-        setupMultiPolygon('Leptomeninges', 'black', featureCollection);
-        setupMultiPolygon('Exclude', 'red', featureCollection);
+        setupMultiPolygon('Gray Matter', featureCollection);
+        setupMultiPolygon('White Matter', featureCollection);
+        setupMultiPolygon('Leptomeninges', featureCollection);
+        setupMultiPolygon('Superficial', featureCollection);
+        setupMultiPolygon('Other', featureCollection);
+        setupMultiPolygon('Exclude', featureCollection);
     }
     
     // reset the button states
@@ -288,11 +394,12 @@ function setupFeatureCollection(existing){
 
 }
 
-function setupMultiPolygon(name, color, parent){
+function setupMultiPolygon(name, parent){
     if(!Object.keys(annotations).includes(name)){
         console.error('Bad name - not included in the annotations dictionary');
         return;
     }
+    const color = annotationColors[name];
     const style = {
         rescale:{
             strokeWidth: 1,
