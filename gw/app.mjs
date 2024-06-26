@@ -22,6 +22,8 @@ const startExclude = document.querySelector('#start-exclude');
 const finishExclude = document.querySelector('#finish-exclude');
 const submitButton = document.querySelector('#submit');
 
+const FILL_OPACITY = 0.5;
+
 let featureCollection;
 const annotations = {
     'Gray Matter': null,
@@ -363,6 +365,7 @@ function setupFeatureCollection(existing){
         featureCollection.children.forEach(child => {
             if(validNames.includes(child.displayName)){
                 annotations[child.displayName] = child;
+                child.style.fillOpacity = FILL_OPACITY;
             } else {
                 child.remove();
             }
@@ -414,7 +417,7 @@ function setupMultiPolygon(name, parent){
         },
         strokeColor: color,
         fillColor: color,
-        fillOpacity: 0.5
+        fillOpacity: FILL_OPACITY
     };
 
     const mp = tk.makePlaceholderItem(style);
