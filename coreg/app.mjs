@@ -1,10 +1,10 @@
 
-import { RotationControlOverlay } from 'https://cdn.jsdelivr.net/gh/pearcetm/osd-paperjs-annotation@0.4.6/src/js/rotationcontrol.mjs';
-import { AnnotationToolkit } from 'https://cdn.jsdelivr.net/gh/pearcetm/osd-paperjs-annotation@0.4.6/src/js/annotationtoolkit.mjs';
+import { RotationControlOverlay } from 'https://cdn.jsdelivr.net/gh/pearcetm/osd-paperjs-annotation@0.4.10/src/js/rotationcontrol.mjs';
+import { AnnotationToolkit } from 'https://cdn.jsdelivr.net/gh/pearcetm/osd-paperjs-annotation@0.4.10/src/js/annotationtoolkit.mjs';
 import { DSAUserInterface } from '../dsa/dsauserinterface.mjs';
-import { TransformTool } from 'https://cdn.jsdelivr.net/gh/pearcetm/osd-paperjs-annotation@0.4.6/src/js/papertools/transform.mjs';
-import { PointTextTool } from 'https://cdn.jsdelivr.net/gh/pearcetm/osd-paperjs-annotation@0.4.6/src/js/papertools/pointtext.mjs';
-import { DragAndDrop } from 'https://cdn.jsdelivr.net/gh/pearcetm/osd-paperjs-annotation@0.4.6/src/js/utils/draganddrop.mjs';
+import { TransformTool } from 'https://cdn.jsdelivr.net/gh/pearcetm/osd-paperjs-annotation@0.4.10/src/js/papertools/transform.mjs';
+import { PointTextTool } from 'https://cdn.jsdelivr.net/gh/pearcetm/osd-paperjs-annotation@0.4.10/src/js/papertools/pointtext.mjs';
+import { DragAndDrop } from 'https://cdn.jsdelivr.net/gh/pearcetm/osd-paperjs-annotation@0.4.10/src/js/utils/draganddrop.mjs';
 
 
 class Transformer extends TransformTool{
