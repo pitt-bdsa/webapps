@@ -1,6 +1,6 @@
 
-import { RotationControlOverlay } from 'https://cdn.jsdelivr.net/gh/pearcetm/osd-paperjs-annotation@0.4.6/src/js/rotationcontrol.mjs';
-import { AnnotationToolkit } from 'https://cdn.jsdelivr.net/gh/pearcetm/osd-paperjs-annotation@0.4.6/src/js/annotationtoolkit.mjs';
+import { RotationControlOverlay } from 'https://cdn.jsdelivr.net/gh/pearcetm/osd-paperjs-annotation@0.4.12/src/js/rotationcontrol.mjs';
+import { AnnotationToolkit } from 'https://cdn.jsdelivr.net/gh/pearcetm/osd-paperjs-annotation@0.4.12/src/js/annotationtoolkit.mjs';
 import { DSAUserInterface } from '../dsa/dsauserinterface.mjs';
 
 /**
@@ -13,7 +13,6 @@ export class SegmentationUI{
     }
 }
 
-
 // Global DSA linking variables
 const ANNOTATION_NAME = 'Gray White Segmentation';
 const ANNOTATION_DESCRIPTION = 'Created by the Gray-White Segmentation Web App';
@@ -25,18 +24,33 @@ const startWhite = document.querySelector('#start-white');
 const finishWhite = document.querySelector('#finish-white');
 const startLeptomeninges = document.querySelector('#start-leptomeninges');
 const finishLeptomeninges = document.querySelector('#finish-leptomeninges');
+const startSuperficial = document.querySelector('#start-superficial');
+const finishSuperficial = document.querySelector('#finish-superficial');
+const startOther = document.querySelector('#start-other');
+const finishOther = document.querySelector('#finish-other');
 const startExclude = document.querySelector('#start-exclude');
 const finishExclude = document.querySelector('#finish-exclude');
 const submitButton = document.querySelector('#submit');
+
+const FILL_OPACITY = 0.5;
 
 let featureCollection;
 const annotations = {
     'Gray Matter': null,
     'White Matter': null,
     'Leptomeninges': null,
+    'Superficial': null,
+    'Other': null,
     'Exclude': null,
 }
-
+const annotationColors = {
+    'Gray Matter': 'green',
+    'White Matter': 'blue',
+    'Leptomeninges': 'black',
+    'Superficial': 'yellow',
+    'Other': 'magenta',
+    'Exclude': 'red',
+}
 // don't navigate away accidentally
 window.addEventListener('beforeunload',function(){
     return 'Are you sure you want to leave?';
@@ -108,6 +122,8 @@ startGray.addEventListener('click',function(){
     const isActive = this.classList.toggle('active');
     startWhite.classList.remove('active');
     startLeptomeninges.classList.remove('active');
+    startSuperficial.classList.remove('active');
+    startOther.classList.remove('active');
     startExclude.classList.remove('active');
     featureCollection.selected = false;
     if(isActive){
@@ -125,6 +141,8 @@ startWhite.addEventListener('click',function(){
     const isActive = this.classList.toggle('active');
     startGray.classList.remove('active');
     startLeptomeninges.classList.remove('active');
+    startSuperficial.classList.remove('active');
+    startOther.classList.remove('active');
     startExclude.classList.remove('active');
     featureCollection.selected = false;
     if(isActive){
@@ -141,8 +159,11 @@ startLeptomeninges.addEventListener('click',function(){
     const isActive = this.classList.toggle('active');
     startGray.classList.remove('active');
     startWhite.classList.remove('active');
+    startSuperficial.classList.remove('active');
+    startOther.classList.remove('active');
     startExclude.classList.remove('active');
     featureCollection.selected = false;
+    finishLeptomeninges.disabled = false; // enable the finish button now rather than checking the area since it can be empty
     if(isActive){
         annotations['Leptomeninges'].select();
     } else {
@@ -152,12 +173,52 @@ startLeptomeninges.addEventListener('click',function(){
     }
 });
 
+// Set up the "Start Superficial" button
+startSuperficial.addEventListener('click',function(){
+    const isActive = this.classList.toggle('active');
+    startGray.classList.remove('active');
+    startWhite.classList.remove('active');
+    startLeptomeninges.classList.remove('active');
+    startOther.classList.remove('active');
+    startExclude.classList.remove('active');
+    featureCollection.selected = false;
+    finishSuperficial.disabled = false; // enable the finish button now rather than checking the area since it can be empty
+    if(isActive){
+        annotations['Superficial'].select();
+    } else {
+        annotations['Superficial'].deselect();
+        tk.activateTool('default');
+        tk._annotationUI._toolbar.setMode();
+    }
+});
+
 // Set up the "Start Leptomeninges" button
+startOther.addEventListener('click',function(){
+    const isActive = this.classList.toggle('active');
+    startGray.classList.remove('active');
+    startWhite.classList.remove('active');
+    startLeptomeninges.classList.remove('active');
+    startSuperficial.classList.remove('active');
+    startExclude.classList.remove('active');
+    featureCollection.selected = false;
+    finishOther.disabled = false; // enable the finish button now rather than checking the area since it can be empty
+    if(isActive){
+        annotations['Other'].select();
+    } else {
+        annotations['Other'].deselect();
+        tk.activateTool('default');
+        tk._annotationUI._toolbar.setMode();
+    }
+});
+
+// Set up the "Start Exclude" button
 startExclude.addEventListener('click',function(){
     const isActive = this.classList.toggle('active');
     startGray.classList.remove('active');
     startWhite.classList.remove('active');
     startLeptomeninges.classList.remove('active');
+    startSuperficial.classList.remove('active');
+    startOther.classList.remove('active');
     featureCollection.selected = false;
 
     finishExclude.disabled = false; // enable the finish button now rather than checking the area since it can be empty
@@ -192,11 +253,31 @@ finishLeptomeninges.addEventListener('click',function(){
     testComplete();
 });
 
+// Set up the "Finish Leptomeninges" button
+finishSuperficial.addEventListener('click',function(){
+    this.classList.add('complete');
+    makeNonOverlapping('Superficial', false);
+    testComplete();
+});
+
+// Set up the "Finish Leptomeninges" button
+finishOther.addEventListener('click',function(){
+    this.classList.add('complete');
+    makeNonOverlapping('Other', false);
+    testComplete();
+});
+
 // Set up the "Finish Exclude" button
 finishExclude.addEventListener('click',function(){
     this.classList.add('complete');
+    makeNonOverlapping('Exclude', true);
+    testComplete();
+});
+
+// Set up the "Submit" button
+submitButton.addEventListener('click', function(){
     // make Exclude a polygon type if the user hasn't drawn anything
-    if(annotations['Exclude']){
+    if(annotations['Exclude'].area === 0){
         const geometry = {
             type: 'Polygon',
             coordinates: [[[-1, -1], [-1, 0], [0, 0], [0, -1]]],
@@ -205,14 +286,43 @@ finishExclude.addEventListener('click',function(){
         annotations['Exclude'].replaceWith(newItem);
         annotations['Exclude'] = newItem;
     }
-    
 
-    makeNonOverlapping('Exclude', true);
-    testComplete();
-});
+    if(annotations['Leptomeninges'].area === 0){
+        const geometry = {
+            type: 'Polygon',
+            coordinates: [[[-2, -1], [-2, 0], [-1, 0], [-1, -1]]],
+        }
+        const newItem = tk.paperScope.Item.fromGeoJSON(geometry);
+        annotations['Leptomeninges'].replaceWith(newItem);
+        annotations['Leptomeninges'] = newItem;
+    }
 
-// Set up the "Submit" button
-submitButton.addEventListener('click', function(){
+    if(annotations['Superficial'].area === 0){
+        const geometry = {
+            type: 'Polygon',
+            coordinates: [[[-3, -1], [-3, 0], [-2, 0], [-2, -1]]],
+        }
+        const newItem = tk.paperScope.Item.fromGeoJSON(geometry);
+        annotations['Superficial'].replaceWith(newItem);
+        annotations['Superficial'] = newItem;
+    }
+
+    if(annotations['Other'].area === 0){
+        const geometry = {
+            type: 'Polygon',
+            coordinates: [[[-4, -1], [-4, 0], [-3, 0], [-3, -1]]],
+        }
+        const newItem = tk.paperScope.Item.fromGeoJSON(geometry);
+        annotations['Other'].replaceWith(newItem);
+        annotations['Other'] = newItem;
+    }
+
+    Object.values(annotations).forEach(annotation=>{
+        if(annotation.area < 0){
+            annotation.reverse();
+        }
+    });
+
     submitButton.classList.add('pending');
     submitButton.disabled = true;
     const itemID = viewer.world.getItemAt(0).source.item._id;
@@ -231,7 +341,10 @@ submitButton.addEventListener('click', function(){
 function testAreas(){
     annotations['Gray Matter'] && (finishGray.disabled = annotations['Gray Matter'].area === 0);
     annotations['White Matter'] && (finishWhite.disabled = annotations['White Matter'].area === 0);
-    annotations['Leptomeninges'] && (finishLeptomeninges.disabled = annotations['Leptomeninges'].area === 0);
+    annotations['Leptomeninges'] && (finishLeptomeninges.disabled = (annotations['Leptomeninges'].area === 0 && finishLeptomeninges.disabled));
+    annotations['Superficial'] && (finishSuperficial.disabled = (annotations['Superficial'].area === 0 && finishSuperficial.disabled));
+    annotations['Other'] && (finishOther.disabled = (annotations['Other'].area === 0 && finishOther.disabled));
+    annotations['Exclude'] && (finishExclude.disabled = (annotations['Exclude'].area === 0 && finishExclude.disabled));
 }
 
 function testComplete(){
@@ -262,19 +375,39 @@ function setupFeatureCollection(existing){
         featureCollection.children.forEach(child => {
             if(validNames.includes(child.displayName)){
                 annotations[child.displayName] = child;
+                child.style.fillOpacity = FILL_OPACITY;
             } else {
                 child.remove();
             }
-        })
+        });
+
+        // initialize empty item for any category the annotation is missing
+        for(const name of validNames){
+            const existing = featureCollection.children.filter(c => c.displayName === name)[0];
+            if(!existing){
+                setupMultiPolygon(name, featureCollection);
+            }
+        }
+
     } else {
         featureCollection = tk.addEmptyFeatureCollectionGroup();
         featureCollection.displayName = ANNOTATION_NAME;
         featureCollection.data.userdata = { dsa: { description: ANNOTATION_DESCRIPTION} };
-        setupMultiPolygon('Gray Matter', 'green', featureCollection);
-        setupMultiPolygon('White Matter', 'blue', featureCollection);
-        setupMultiPolygon('Leptomeninges', 'black', featureCollection);
-        setupMultiPolygon('Exclude', 'red', featureCollection);
+        setupMultiPolygon('Gray Matter', featureCollection);
+        setupMultiPolygon('White Matter', featureCollection);
+        setupMultiPolygon('Leptomeninges', featureCollection);
+        setupMultiPolygon('Superficial', featureCollection);
+        setupMultiPolygon('Other', featureCollection);
+        setupMultiPolygon('Exclude', featureCollection);
     }
+
+    const ti = featureCollection.layer.tiledImage;
+
+    const from = new tk.paperScope.Point(0, 0);
+    const to = new tk.paperScope.Point(ti.source.width, ti.source.height);
+    const boundingRect = new tk.paperScope.Path.Rectangle(from, to);
+    boundingRect.isBoundingElement = true;
+    featureCollection.addChild(boundingRect);
     
     // reset the button states
     document.querySelectorAll('#annotation-controls button.complete').forEach(b=>b.classList.remove('complete'));
@@ -282,18 +415,19 @@ function setupFeatureCollection(existing){
 
 }
 
-function setupMultiPolygon(name, color, parent){
+function setupMultiPolygon(name, parent){
     if(!Object.keys(annotations).includes(name)){
         console.error('Bad name - not included in the annotations dictionary');
         return;
     }
+    const color = annotationColors[name];
     const style = {
         rescale:{
             strokeWidth: 1,
         },
         strokeColor: color,
         fillColor: color,
-        fillOpacity: 0.1
+        fillOpacity: FILL_OPACITY
     };
 
     const mp = tk.makePlaceholderItem(style);
@@ -313,32 +447,159 @@ function setupMultiPolygon(name, color, parent){
 }
 
 function makeNonOverlapping(name, overwriteOthers){
-    if(overwriteOthers){
-        const keys = Object.keys(annotations).filter(key => key !== name);
-        let thisAnnotation = annotations[name];
-        for(const key of keys){
-            const other = annotations[key];
-            const newOther = other.subtract(thisAnnotation, false).toCompoundPath();
-            other.removeChildren();
-            for(const child of newOther.children){
-                other.addChild(child.clone());
+    const keys = Object.keys(annotations).filter(key => key !== name);
+    let thisAnnotation = annotations[name];
+    window.hx = null;
+    if(thisAnnotation.area > 0){
+        if(overwriteOthers){
+            for(const key of keys){
+                const other = annotations[key];
+                if(other.area === 0){
+                    continue;
+                }
+                const intersection = thisAnnotation.intersect(other, false);
+                if(intersection.area < 0){
+                    intersection.reverse();
+                }
+                // Only do the boolean operations if the areas actually intersect
+                if(intersection.area > 0){
+                    let newAnnotation, diff, finished;
+                    // first try subtracting the intersection from the original
+                    // if the difference in the area vs the expected area is very small, it succeeded, so we can use the result
+                    newAnnotation = other.subtract(intersection, false).toCompoundPath();
+                    // if(newAnnotation.area < 0){
+                    //     newAnnotation.reverse();
+                    // }
+                    // diff = newAnnotation.area - (other.area - intersection.area);
+                    // if(Math.abs(diff) < 1){
+                    //     finished = true;
+                    //     console.log('Intersection worked');
+                    // }
+
+                    // // If we haven't finished, try subtracting the complete other item from the original
+                    // if(!finished){
+                    //     newAnnotation.remove();
+                    //     newAnnotation = other.subtract(thisAnnotation, false).toCompoundPath();
+                    //     if(newAnnotation.area < 0){
+                    //         newAnnotation.reverse();
+                    //     }
+                    //     diff = newAnnotation.area - (other.area - intersection.area);
+                    //     if(Math.abs(diff) < 1){
+                    //         finished = true;
+                    //         console.log('Big subtract worked');
+                    //     }
+                    // }
+
+                    // // If we haven't finished, try expanding the intersection a tiny bit and retrying
+                    // if(!finished){
+                    //     intersection.scale(new paper.Point(1.001, 1.001));
+                    //     newAnnotation.remove();
+                    //     newAnnotation = other.subtract(intersection, false).toCompoundPath();
+                    //     if(newAnnotation.area < 0){
+                    //         newAnnotation.reverse();
+                    //     }
+                    //     diff = newAnnotation.area - (other.area - intersection.area);
+                    //     if(Math.abs(diff) < 1){
+                    //         finished = true;
+                    //         console.log('Scaled intersection worked');
+                    //     }
+                    // }
+
+                    // if(finished){
+                    //     other.removeChildren();
+                    //     for(const child of newAnnotation.children){
+                    //         other.addChild(child.clone());
+                    //     }
+                    // } else {
+                    //     window.alert('Subtracting areas failed, please edit slightly and retry');
+                    //     console.log('Nothing worked');
+                    // }
+                    other.removeChildren();
+                    for(const child of newAnnotation.children){
+                        other.addChild(child.clone());
+                    }
+                    newAnnotation.remove();
+
+                }
+                intersection.remove();
+                
             }
-            newOther.remove();
-        }
-    } else {
-        const keys = Object.keys(annotations).filter(key => key !== name);
-        let thisAnnotation = annotations[name];
-        for(const key of keys){
-            const other = annotations[key];
-            const newAnnotation = thisAnnotation.subtract(other, false).toCompoundPath();
-            thisAnnotation.removeChildren();
-            // thisAnnotation.addChildren(newAnnotation.children);
-            for(const child of newAnnotation.children){
-                thisAnnotation.addChild(child.clone());
+            
+        } else {
+            for(const key of keys){
+                const other = annotations[key];
+
+                const intersection = thisAnnotation.intersect(other, false);
+                if(intersection.area < 0){
+                    intersection.reverse();
+                }
+                // Only do the boolean operations if the areas actually intersect
+                if(intersection.area > 0){
+                    let newAnnotation, diff, finished;
+                    // first try subtracting the intersection from the original
+                    // if the difference in the area vs the expected area is very small, it succeeded, so we can use the result
+                    newAnnotation = thisAnnotation.subtract(intersection, false).toCompoundPath();
+                    // if(newAnnotation.area < 0){
+                    //     newAnnotation.reverse();
+                    // }
+                    // diff = thisAnnotation.area - intersection.area - newAnnotation.area;
+                    // if(Math.abs(diff) < 1){
+                    //     finished = true;
+                    //     console.log('Intersection worked');
+                    // }
+
+                    // // If we haven't finished, try subtracting the complete other item from the original
+                    // if(!finished){
+                    //     newAnnotation.remove();
+                    //     newAnnotation = thisAnnotation.subtract(other, false).toCompoundPath();
+                    //     if(newAnnotation.area < 0){
+                    //         newAnnotation.reverse();
+                    //     }
+                    //     diff = thisAnnotation.area - intersection.area - newAnnotation.area;
+                    //     if(Math.abs(diff) < 1){
+                    //         finished = true;
+                    //         console.log('Big subtract worked');
+                    //     }
+                    // }
+
+                    // // If we haven't finished, try expanding the intersection a tiny bit and retrying
+                    // if(!finished){
+                    //     intersection.scale(new paper.Point(1.001, 1.001));
+                    //     newAnnotation.remove();
+                    //     newAnnotation = thisAnnotation.subtract(intersection, false).toCompoundPath();
+                    //     if(newAnnotation.area < 0){
+                    //         newAnnotation.reverse();
+                    //     }
+                    //     diff = thisAnnotation.area - intersection.area - newAnnotation.area;
+                    //     if(Math.abs(diff) < 1){
+                    //         finished = true;
+                    //         console.log('Scaled intersection worked');
+                    //     }
+                    // }
+
+                    // if(finished){
+                    //     thisAnnotation.removeChildren();
+                    //     for(const child of newAnnotation.children){
+                    //         thisAnnotation.addChild(child.clone());
+                    //     }
+                    // } else {
+                    //     window.alert('Subtracting areas failed, please edit slightly and retry');
+                    //     console.log('Nothing worked');
+                    // }
+
+                    thisAnnotation.removeChildren();
+                    for(const child of newAnnotation.children){
+                        thisAnnotation.addChild(child.clone());
+                    }
+                    newAnnotation.remove();
+                }
+                intersection.remove();
             }
-            newAnnotation.remove();
+            
         }
     }
+
+    
 }
 
 function setupKeypressHandlers(){

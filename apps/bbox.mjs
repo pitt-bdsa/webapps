@@ -1,5 +1,5 @@
-import { RectangleTool } from 'https://cdn.jsdelivr.net/gh/pearcetm/osd-paperjs-annotation@0.4.11/src/js/papertools/rectangle.mjs';
-import { AnnotationToolkit } from 'https://cdn.jsdelivr.net/gh/pearcetm/osd-paperjs-annotation@0.4.11/src/js/annotationtoolkit.mjs';
+import { RectangleTool } from 'https://cdn.jsdelivr.net/gh/pearcetm/osd-paperjs-annotation@0.4.12/src/js/papertools/rectangle.mjs';
+import { AnnotationToolkit } from 'https://cdn.jsdelivr.net/gh/pearcetm/osd-paperjs-annotation@0.4.12/src/js/annotationtoolkit.mjs';
 
 export class BBox extends OpenSeadragon.EventSource{
     /**
