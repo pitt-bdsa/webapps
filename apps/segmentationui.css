@@ -1,0 +1,46 @@
+.segmentation-ui-wrapper{
+    width:100%;
+    height:100%;
+    display:grid;
+    grid-template-rows:auto 1fr;
+    background-color:white;
+}
+.segmentation-ui-header{
+    /* grid-column:span 2; */
+    display:grid;
+    grid-template-columns:auto 1fr auto;
+    column-gap:1em;
+    padding:2px 5px;
+    border-bottom:thin black solid;
+}
+
+.segmentation-ui-header .dsa-link{
+    width:20em;
+}
+/* #current-file:empty::after{
+    content:'No file selected';
+    color:lightgray;
+} */
+
+.segmentation-ui-buttons{
+    white-space: nowrap;
+}
+.segmentation-ui-buttons>span{
+    margin-left:1em;
+}
+.segmentation-ui-buttons .button-pair:not(:last-of-type){
+    border-right:thin black solid;
+    padding-right:0.3em;
+    margin-right:0.3em;
+}
+button.active {
+    background-color: lightblue;
+}
+button.complete {
+    background-color:lightgreen;
+}
+
+.annotation-ui-drawing-toolbar{
+    width:25em;
+    display:'inline-flex';
+}

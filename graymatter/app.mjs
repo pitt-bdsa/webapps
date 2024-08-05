@@ -26,8 +26,8 @@ rotationControl.origActivate = rotationControl.activate;
 rotationControl.disable = () => rotationControl.activate = ()=>{};
 rotationControl.enable = () => rotationControl.activate = rotationControl.origActivate;
 
-const ANNOTATION_NAME = 'Gray White Segmentation';
-const ANNOTATION_DESCRIPTION = 'Created by the Gray-White Segmentation Web App';
+const ANNOTATION_NAME = 'Gray Matter Segmentation';
+const ANNOTATION_DESCRIPTION = 'Created by the Gray Matter Segmentation Web App';
 
 const options = {
     name: ANNOTATION_NAME,
@@ -39,30 +39,7 @@ const options = {
             name:'Gray Matter',
             color:'green'
         },
-        {
-            name:'White Matter',
-            color:'blue'
-        },
-        {
-            name:'Superficial',
-            color:'yellow'
-        },
-        {
-            name:'Leptomeninges',
-            color:'black'
-        },
-        {
-            name:'Other',
-            color:'magenta'
-        },
-        {
-            name:'Background',
-            color:'gray'
-        },
-        {
-            name:'Exclude',
-            color:'red'
-        },
+        
     ]
 }
 const segmentationUI = new SegmentationUI(options);
@@ -70,7 +47,6 @@ segmentationUI.dsaContainer.appendChild(dsaUI.header[0]);
 segmentationUI.setSaveHandler((itemID, geoJSON)=>{
 
     return dsaUI.saveAnnotationInDSAFormat(itemID, geoJSON, true).then(d=>{
-        segmentationUI.setAnnotationId(d._id);
         window.alert('Save succeeded');
     }).catch(e=>{
         console.warning('Problem saving annotation:')
