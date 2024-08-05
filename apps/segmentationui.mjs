@@ -64,7 +64,9 @@ export class SegmentationUI{
         this.tk = this._createAnnotationToolkit();
 
         this.regionDefs = this._createRegionControls(options.regions);
-        this.trimButtons = this._createTrimButtons();
+        if(options.regions.length > 1){
+            this.trimButtons = this._createTrimButtons();
+        }
 
         this._createSaveButton();
 
@@ -141,7 +143,7 @@ export class SegmentationUI{
         const container = document.createElement('span');
         this.container.appendChild(container);
         const label = document.createElement('label');
-        label.innerText = 'Regions: ';
+        label.innerText = 'Activate: ';
         container.appendChild(label);
 
         return regions.reduce((a, r, i) => {
