@@ -63,7 +63,30 @@ export class SegmentationUI{
         
         this.tk = this._createAnnotationToolkit();
 
+        this.toolbar = document.querySelector('.annotation-ui-drawing-toolbar');
+
+        // move the visibility controls up next to the toolbar
+        this.opacityControls = document.querySelector('.annotation-visibility-controls');
+        this.toolbar.after(this.opacityControls);
+        this.opacityControls.style = 'display:inline-flex';
+
+        if(options.instructionsURL){
+            // Add a link out to instructions page
+            const link = document.createElement('a');
+            link.target = '_blank';
+            link.href = options.instructionsURL;
+            link.classList.add('instructions-link');
+            const linkButton = document.createElement('button');
+            link.appendChild(linkButton);
+            linkButton.innerText = 'View Instructions';
+            // opacityControls.after(link);
+            this.toolbar.before(link);
+            link.style='display:inline-flex';
+        }
+
+
         this.regionDefs = this._createRegionControls(options.regions);
+        this.regionHistory = [];
         if(options.regions.length > 1){
             this.trimButtons = this._createTrimButtons();
         }
@@ -75,6 +98,11 @@ export class SegmentationUI{
             this.tiledImage = this.viewer.world.getItemAt(0);
             this.itemId = this.tiledImage.source.item._id;
             this.finishedCheckbox.checked = false;
+
+            // deactivate undoTrim and reset history
+            this.undoTrim.disabled = true;
+            this.regionHistory = [];
+            
             this.container.querySelectorAll('button').forEach(b => b.disabled = true);
             this.dsa.getAnnotations(this.itemId).then(d => {
                 const existingSegmentations = d.filter(a => a.annotation?.name === this.name);
@@ -91,7 +119,7 @@ export class SegmentationUI{
                     window.alert(`There was a problem. More than 1 annotation named "${this.name}" is present. Please use the DSA to remove the extras.`);
                 }
 
-                this.container.querySelectorAll('button').forEach(b => b.disabled = false);
+                // this.container.querySelectorAll('button').forEach(b => b.disabled = false);
 
                 for(const region of Object.values(this.regionDefs)){
                     region.activateButton.disabled = false;
@@ -175,6 +203,10 @@ export class SegmentationUI{
                     regionDef.activateButton.classList.remove('active');
                 }
             }
+
+            // deactivate undoTrim and reset history
+            this.undoTrim.disabled = true;
+            this.regionHistory = [];
             
             // featureCollection.selected = false; TODO: is this needed?
             if(isActive){
@@ -210,6 +242,16 @@ export class SegmentationUI{
         buttonSelected.addEventListener('click', ()=>this._makeNonOverlapping(false));
         buttonOthers.addEventListener('click', ()=>this._makeNonOverlapping(true));
 
+
+        const buttonUndo = document.createElement('button');
+        buttonUndo.classList.add('undo-button');
+        buttonUndo.innerText = 'Undo';
+        buttonUndo.title = 'Undo the last trim operation';
+        buttonUndo.disabled = true;
+        span.appendChild(buttonUndo);
+        buttonUndo.addEventListener('click', ()=>this._undoMakeNonOverlapping());
+
+        this.undoTrim = buttonUndo;
 
         buttonSelected.disabled = buttonOthers.disabled = true;
 
@@ -415,15 +457,17 @@ export class SegmentationUI{
         const thisAnnotation = regions.filter(region=>region.annotation.selected).map(r=>r.annotation)[0];
         if(!thisAnnotation) return;
 
+        this._saveRegionHistory();
+
         const others = regions.filter(region => region.annotation !== thisAnnotation).map(r=>r.annotation);
         
-        window.hx = null;
         if(thisAnnotation.area > 0){
             if(overwriteOthers){
                 for(const other of others){
                     if(other.area === 0){
                         continue;
                     }
+
                     const intersection = thisAnnotation.intersect(other, {insert:false});
                     if(intersection.area < 0){
                         intersection.reverse();
@@ -466,6 +510,34 @@ export class SegmentationUI{
         }
 
         
+    }
+
+    _undoMakeNonOverlapping(){
+        // console.log('undoMakeNonOverlapping');
+        const history = this.regionHistory.pop();
+        if(history){
+            for(const def of history){
+                const wasSelected = this.regionDefs[def.name].annotation.selected;
+                def.annotation.isGeoJSONFeature = true;
+                this.regionDefs[def.name].annotation.replaceWith(def.annotation);
+                this.regionDefs[def.name].annotation = def.annotation;
+                def.annotation.selected = wasSelected;
+            }
+        }
+        if(this.regionHistory.length === 0){
+            this.undoTrim.disabled = true;
+        }
+    }
+
+    _saveRegionHistory(){
+        // console.log('Save region history')
+        let history = Object.entries(this.regionDefs).map(([key,val])=>{
+            // console.log(key, val);
+            return {name: key, annotation: val.annotation.clone({insert: false})}
+        });
+
+        this.regionHistory.push(history);
+        this.undoTrim.disabled = false;
     }
 
 

@@ -34,30 +34,31 @@ const options = {
     description: ANNOTATION_DESCRIPTION,
     dsa: dsaUI,
     viewer:viewer,
+    instructionsURL: 'https://pitt-bdsa.github.io/webapps/gw/instructions',
     regions:[
-        {
-            name:'Gray Matter',
-            color:'green'
-        },
         {
             name:'White Matter',
             color:'blue'
-        },
-        {
-            name:'Superficial',
-            color:'yellow'
         },
         {
             name:'Leptomeninges',
             color:'black'
         },
         {
-            name:'Other',
-            color:'magenta'
+            name:'Background',
+            color:'lightgrey'
         },
         {
-            name:'Background',
-            color:'gray'
+            name:'Gray Matter',
+            color:'green'
+        },
+        {
+            name:'Superficial',
+            color:'yellow'
+        },
+        {
+            name:'Other',
+            color:'magenta'
         },
         {
             name:'Exclude',
@@ -66,6 +67,10 @@ const options = {
     ]
 }
 const segmentationUI = new SegmentationUI(options);
+
+
+
+
 segmentationUI.dsaContainer.appendChild(dsaUI.header[0]);
 segmentationUI.setSaveHandler((itemID, geoJSON)=>{
 

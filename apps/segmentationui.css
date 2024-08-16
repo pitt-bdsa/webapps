@@ -44,3 +44,10 @@ button.complete {
     width:25em;
     display:'inline-flex';
 }
+.undo-button{
+    margin-left:0.5em;
+}
+.instructions-link{
+    margin-right:1em;
+    text-decoration:none;
+}
