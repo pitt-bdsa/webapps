@@ -279,6 +279,7 @@ export class SegmentationUI{
 
         const saveButton = document.createElement('button');
         saveButton.innerText = 'Save';
+        this.saveButton = saveButton;
         
         const grp = document.createElement('span');
         grp.classList.add('button-pair');
@@ -420,6 +421,8 @@ export class SegmentationUI{
         for(const r of Object.values(this.regionDefs)){
             r.activateButton.classList.remove('active');
         }
+
+        this.saveButton.disabled = false;
     
     }
 

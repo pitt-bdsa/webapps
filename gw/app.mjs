@@ -46,7 +46,7 @@ const options = {
         },
         {
             name:'Background',
-            color:'lightgrey'
+            color:'lightgray'
         },
         {
             name:'Gray Matter',
