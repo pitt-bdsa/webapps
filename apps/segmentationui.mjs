@@ -155,7 +155,7 @@ export class SegmentationUI{
      * @param {String} id 
      */
     setAnnotationId(id){
-        let fc = this.tk.getFeatureCollectionGroups[0];
+        let fc = this.tk.getFeatureCollectionGroups()[0];
         if(!fc) return;
         if(!fc.data.userdata) fc.data.userdata = {};
         if(!fc.data.userdata.dsa) fc.data.userdata.dsa = {};
