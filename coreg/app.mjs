@@ -67,6 +67,7 @@ const saveAnnotationButton = document.querySelector('#save-annotation');
 const tiledImageMap = new Map();
 const editButtonMap = new Map();
 const cropButtonMap = new Map();
+const flipButtonMap = new Map();
 const staticMap = new Map();
 const movingMap = new Map();
 const visibilityButtonMap = new Map();
@@ -202,6 +203,9 @@ function setupLayerUI(){
         } else if(event.target.matches('.crop')){
             event.preventDefault();
             cropButtonClicked(event.target);
+        } else if (event.target.matches('.flip')){
+            event.preventDefault();
+            flipButtonClicked(event.target);
         }
     });
 
@@ -354,6 +358,11 @@ function editButtonClicked(editButton){
     }
 }
 
+function flipButtonClicked(flipButton){
+    const tiledImage = flipButtonMap.get(flipButton);
+    tiledImage.setFlip(!tiledImage.getFlip());
+}
+
 function cropButtonClicked(cropButton){
     const tiledImage = cropButtonMap.get(cropButton);
     const isCropped = tiledImage._croppingPolygons;
@@ -486,12 +495,14 @@ function setupTiledImage(tiledImage){
         editButton: element.querySelector('button.edit'),
         visibilityButton: element.querySelector('button.visibility'),
         cropButton: element.querySelector('button.crop'),
+        flipButton: element.querySelector('button.flip'),
         staticOption: staticOption,
         movingOption: movingOption
     }
     tiledImageMap.set(tiledImage, data);
     editButtonMap.set(data.editButton, tiledImage);
     cropButtonMap.set(data.cropButton, tiledImage);
+    flipButtonMap.set(data.flipButton, tiledImage)
     staticMap.set(staticOption, tiledImage);
     movingMap.set(movingOption, tiledImage);
     visibilityButtonMap.set(data.visibilityButton, tiledImage);
@@ -542,6 +553,7 @@ function removeTiledImage(tiledImage){
     editButtonMap.delete(data.editButton);
     visibilityButtonMap.delete(data.visibilityButton);
     cropButtonMap.delete(data.cropbutton);
+    flipButtonMap.delete(data.flipButton);
     staticMap.delete(data.staticOption);
     movingMap.delete(data.movingOption);
 }
